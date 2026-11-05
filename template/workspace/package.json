@@ -1,0 +1,14 @@
+{
+  "name": "assetscraft-workspace",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "sprite": "node tools/sprite.mjs"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "2.6.2",
+    "gifenc": "1.0.3",
+    "pngjs": "7.0.0"
+  }
+}

@@ -1,0 +1,17 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="AssetsCraft.Desktop.Views.ConfirmDialog"
+        Width="440" SizeToContent="Height" CanResize="False"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{StaticResource Carbon}" Title="Confirmar">
+  <Border BorderBrush="{StaticResource Graphite}" BorderThickness="0,1,0,0" Padding="24">
+    <StackPanel Spacing="12">
+      <TextBlock x:Name="TitleText" Classes="title" TextWrapping="Wrap" />
+      <TextBlock x:Name="BodyText" Classes="muted" FontSize="13" TextWrapping="Wrap" LineHeight="20" />
+      <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,12,0,0">
+        <Button Content="Cancelar" Click="OnCancel" IsCancel="True" />
+        <Button x:Name="ConfirmButton" Classes="solid" Click="OnConfirm" />
+      </StackPanel>
+    </StackPanel>
+  </Border>
+</Window>

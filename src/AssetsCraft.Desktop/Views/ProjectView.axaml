@@ -1,0 +1,511 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:AssetsCraft.Desktop.ViewModels"
+             xmlns:views="using:AssetsCraft.Desktop.Views"
+             xmlns:sprites="using:AssetsCraft.Core.Sprites"
+             x:Class="AssetsCraft.Desktop.Views.ProjectView"
+             x:DataType="vm:ProjectViewModel">
+
+  <Grid ColumnDefinitions="*,16,420">
+    <!-- ======================= conversation ======================= -->
+    <Border x:Name="ChatArea" Grid.Column="0" Classes="card" Padding="0" ClipToBounds="True" DragDrop.AllowDrop="True">
+      <DockPanel>
+        <!-- header -->
+        <Border DockPanel.Dock="Top" Classes="hairline-b" Padding="20,14">
+          <DockPanel>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+              <Button Content="Instalar dependências" Command="{Binding InstallDependenciesCommand}"
+                      IsVisible="{Binding !HasNodeModules}" />
+              <Button ToolTip.Tip="Opções da conversa" Padding="9,8" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="3">
+                  <Ellipse Width="3" Height="3" Fill="{StaticResource Mist}" />
+                  <Ellipse Width="3" Height="3" Fill="{StaticResource Mist}" />
+                  <Ellipse Width="3" Height="3" Fill="{StaticResource Mist}" />
+                </StackPanel>
+                <Button.Flyout>
+                  <MenuFlyout Placement="BottomEdgeAlignedRight">
+                    <MenuItem Header="Renomear" Command="{Binding Item.RenameCommand}" />
+                    <MenuItem Header="Reiniciar chat" Command="{Binding NewConversationCommand}"
+                              ToolTip.Tip="O Claude esquece o histórico; sprites, assets e referências continuam" />
+                    <Separator />
+                    <MenuItem Header="Excluir conversa…" Command="{Binding Item.DeleteCommand}" />
+                  </MenuFlyout>
+                </Button.Flyout>
+              </Button>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,0,16,0" VerticalAlignment="Center">
+              <TextBlock Classes="title" Text="{Binding Name}" TextTrimming="CharacterEllipsis" MaxWidth="520" VerticalAlignment="Center" />
+              <Border Classes="badge in-use" VerticalAlignment="Center"><TextBlock FontSize="12" Text="{Binding KindBadge}" /></Border>
+              <Border Classes="badge" VerticalAlignment="Center"
+                      ToolTip.Tip="Espaço total desta conversa: sprites gerados, assets, referências, histórico e arquivos internos do Claude">
+                <TextBlock Classes="mono" FontSize="12" Text="{Binding Item.SizeText}" />
+              </Border>
+            </StackPanel>
+          </DockPanel>
+        </Border>
+
+        <!-- status -->
+        <Border DockPanel.Dock="Top" Classes="hairline-b" Background="{StaticResource Obsidian}" Padding="20,8"
+                IsVisible="{Binding Status, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Arc Classes="spinner" />
+            <TextBlock Classes="muted" FontSize="13" Text="{Binding Status}" />
+          </StackPanel>
+        </Border>
+
+        <!-- composer -->
+        <Border DockPanel.Dock="Bottom" Padding="16">
+          <Border Classes="panel" CornerRadius="12" Padding="12,8,8,8">
+            <DockPanel>
+              <!-- pending reference attachments -->
+              <ItemsControl DockPanel.Dock="Top" ItemsSource="{Binding PendingAttachments}" IsVisible="{Binding HasAttachments}"
+                            Margin="0,4,0,6">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:PendingAttachment">
+                    <Border Classes="attachment" Margin="0,0,8,8" ToolTip.Tip="{Binding Path}">
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Panel Width="28" Height="28">
+                          <Border CornerRadius="4" ClipToBounds="True" IsVisible="{Binding HasThumbnail}">
+                            <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" />
+                          </Border>
+                          <Border Classes="badge" HorizontalAlignment="Center" IsVisible="{Binding !HasThumbnail}">
+                            <TextBlock Classes="mono" FontSize="10" Text="{Binding Badge}" />
+                          </Border>
+                        </Panel>
+                        <StackPanel VerticalAlignment="Center" MaxWidth="180">
+                          <TextBlock Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis" Foreground="{StaticResource Mist}" />
+                          <TextBlock Classes="mono faint" FontSize="10" Text="{Binding SizeText}" />
+                        </StackPanel>
+                        <Button Classes="text" Content="✕" FontSize="10" Padding="4,2" VerticalAlignment="Center"
+                                ToolTip.Tip="Remover"
+                                Command="{Binding $parent[UserControl].((vm:ProjectViewModel)DataContext).RemoveAttachmentCommand}"
+                                CommandParameter="{Binding}" />
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+              <DockPanel DockPanel.Dock="Bottom" Margin="0,6,0,0">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
+                  <Button Classes="primary" Content="Enviar" Command="{Binding SendCommand}" IsVisible="{Binding !IsBusy}" />
+                  <Button Classes="stop" Command="{Binding StopCommand}" IsVisible="{Binding IsBusy}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Border Width="8" Height="8" CornerRadius="1" Background="{StaticResource Mist}" VerticalAlignment="Center" />
+                      <TextBlock Text="Parar" />
+                    </StackPanel>
+                  </Button>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                  <Button Classes="text" Click="OnAttach" ToolTip.Tip="Anexar imagens, sprites, vídeos ou PDFs de referência (ou arraste para o chat)">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <TextBlock Text="+" FontSize="15" Foreground="{StaticResource Fog}" Margin="0,-2,0,0" />
+                      <TextBlock Text="Anexar referência" FontSize="12" Foreground="{StaticResource Fog}" />
+                    </StackPanel>
+                  </Button>
+                  <Border Width="1" Height="14" Background="{StaticResource Graphite}" Margin="4,0" />
+                  <!-- model picker -->
+                  <Button x:Name="ModelButton" Classes="text" IsEnabled="{Binding !IsBusy}"
+                          ToolTip.Tip="Modelo usado nesta conversa (troca sem perder o histórico)">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <TextBlock Text="{Binding ModelLabel}" FontSize="12" Foreground="{StaticResource Fog}" />
+                      <Path Width="8" Height="5" Stretch="Uniform" Stroke="{StaticResource Fog}" StrokeThickness="1.3"
+                            Data="M0,0 L4,4 L8,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <Button.Flyout>
+                      <Flyout Placement="TopEdgeAlignedLeft" FlyoutPresenterClasses="picker">
+                        <StackPanel Spacing="2" Width="300">
+                          <TextBlock Classes="label-strong" Text="Modelo da conversa" Margin="10,6,10,6" />
+                          <ItemsControl ItemsSource="{Binding ModelChoices}">
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="vm:ModelChoice">
+                                <Button Classes="pick" Click="OnModelPicked" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                                  <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Spacing="2">
+                                      <TextBlock Text="{Binding Label}" FontSize="13" Foreground="{StaticResource Mist}" />
+                                      <TextBlock Text="{Binding Description}" FontSize="11" Foreground="{StaticResource Ash}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <Path Grid.Column="1" Width="11" Height="8" Stretch="Uniform" Stroke="{StaticResource Paper}" StrokeThickness="1.5"
+                                          Data="M0,4 L4,8 L11,0" VerticalAlignment="Center" Margin="10,0,2,0"
+                                          IsVisible="{Binding IsSelected}" />
+                                  </Grid>
+                                </Button>
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                        </StackPanel>
+                      </Flyout>
+                    </Button.Flyout>
+                  </Button>
+                  <Border Width="1" Height="14" Background="{StaticResource Graphite}" Margin="4,0" />
+                  <Border Classes="kbd"><TextBlock Text="↵" /></Border>
+                  <TextBlock Classes="faint" FontSize="12" Text="enviar" VerticalAlignment="Center" />
+                  <Border Classes="kbd" Margin="6,0,0,0"><TextBlock Text="Shift ↵" /></Border>
+                  <TextBlock Classes="faint" FontSize="12" Text="nova linha" VerticalAlignment="Center" />
+                </StackPanel>
+              </DockPanel>
+              <TextBox x:Name="InputBox" Classes="composer" Text="{Binding Input}" AcceptsReturn="True" TextWrapping="Wrap"
+                       MinHeight="56" MaxHeight="220" Watermark="{Binding ComposerHint}" />
+            </DockPanel>
+          </Border>
+        </Border>
+
+        <!-- messages -->
+        <ScrollViewer x:Name="MessagesScroll">
+          <StackPanel Margin="24,20,24,8" MaxWidth="900">
+            <!-- empty state -->
+            <StackPanel Spacing="14" Margin="0,24,0,0" IsVisible="{Binding IsEmpty}">
+              <TextBlock Classes="heading" Text="{Binding EmptyTitle}" />
+              <TextBlock Classes="muted" TextWrapping="Wrap" MaxWidth="560" HorizontalAlignment="Left"
+                         Text="{Binding EmptyText}" />
+              <WrapPanel Margin="0,6,0,0">
+                <ItemsControl ItemsSource="{Binding SuggestionList}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                      <Button Classes="chip" Margin="0,0,8,8" Content="{Binding}"
+                              Command="{Binding $parent[UserControl].((vm:ProjectViewModel)DataContext).UseSuggestionCommand}"
+                              CommandParameter="{Binding}" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </WrapPanel>
+            </StackPanel>
+
+            <ItemsControl ItemsSource="{Binding Messages}">
+              <ItemsControl.DataTemplates>
+                <DataTemplate DataType="vm:UserMessageViewModel">
+                  <Border Classes="msg-user">
+                    <StackPanel Spacing="8">
+                      <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap" Foreground="{StaticResource Paper}" LineHeight="22" />
+                      <ItemsControl ItemsSource="{Binding Attachments}" IsVisible="{Binding HasAttachments}">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="vm:SentAttachment">
+                            <Border Classes="attachment small" Margin="0,0,6,4">
+                              <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Border Classes="badge"><TextBlock Classes="mono" FontSize="10" Text="{Binding Badge}" /></Border>
+                                <TextBlock Text="{Binding Name}" FontSize="12" MaxWidth="200" TextTrimming="CharacterEllipsis"
+                                           Foreground="{StaticResource Mist}" VerticalAlignment="Center" />
+                              </StackPanel>
+                            </Border>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+
+                <DataTemplate DataType="vm:AssistantMessageViewModel">
+                  <Border Classes="msg-assistant">
+                    <StackPanel Spacing="2">
+                      <SelectableTextBlock views:MarkdownText.Source="{Binding Text}" TextWrapping="Wrap" LineHeight="23" FontSize="14"
+                                           Foreground="{StaticResource Mist}" />
+                      <TextBlock Text="▍" Foreground="{StaticResource Fog}" IsVisible="{Binding IsStreaming}" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+
+                <DataTemplate DataType="vm:ToolMessageViewModel">
+                  <Expander Classes="tool" Classes.err="{Binding IsError}">
+                    <Expander.Header>
+                      <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Panel Width="12">
+                          <Arc Classes="spinner" IsVisible="{Binding IsPending}" />
+                          <Ellipse Classes="dot" IsVisible="{Binding !IsPending}" />
+                        </Panel>
+                        <Border Classes="badge">
+                          <TextBlock Classes="mono" FontSize="11" Text="{Binding ToolName}" />
+                        </Border>
+                        <TextBlock Classes="mono muted" Text="{Binding Summary}" TextTrimming="CharacterEllipsis"
+                                   MaxWidth="600" VerticalAlignment="Center" />
+                        <Border Classes="badge" IsVisible="{Binding IsError}">
+                          <TextBlock Text="erro" />
+                        </Border>
+                      </StackPanel>
+                    </Expander.Header>
+                    <ScrollViewer MaxHeight="320">
+                      <SelectableTextBlock Classes="mono" Foreground="{StaticResource Fog}" Text="{Binding Details}" TextWrapping="Wrap" LineHeight="19" />
+                    </ScrollViewer>
+                  </Expander>
+                </DataTemplate>
+
+                <DataTemplate DataType="vm:NoticeMessageViewModel">
+                  <Border Classes="msg-notice" Classes.error="{Binding IsError}">
+                    <SelectableTextBlock Classes="faint" FontSize="12" views:MarkdownText.Source="{Binding Text}" TextWrapping="Wrap" />
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.DataTemplates>
+            </ItemsControl>
+
+            <StackPanel Orientation="Horizontal" Spacing="10" Margin="2,12" IsVisible="{Binding IsBusy}">
+              <Arc Classes="spinner" />
+              <TextBlock Classes="muted" FontSize="13" Text="Claude trabalhando…" />
+            </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+
+
+    <!-- ======================= side ======================= -->
+    <ScrollViewer x:Name="SideScroll" Grid.Column="2">
+      <StackPanel Spacing="16">
+        <!-- sprite viewer -->
+        <Border Classes="card">
+          <StackPanel Spacing="12">
+            <DockPanel>
+              <Button DockPanel.Dock="Right" Classes="text" Content="↻" FontSize="14" Command="{Binding RefreshFilesCommand}" ToolTip.Tip="Atualizar" />
+              <Button DockPanel.Dock="Right" Content="Exportar…" Click="OnExport" Margin="0,0,6,0"
+                      IsEnabled="{Binding HasSelection}"
+                      ToolTip.Tip="Salvar a folha (PNG), os metadados (JSON) e os GIFs numa pasta, prontos para o seu jogo" />
+              <Button DockPanel.Dock="Right" Click="OnPreview" Margin="0,0,6,0"
+                      IsEnabled="{Binding HasSelection}"
+                      ToolTip.Tip="Ver o sprite em tela grande, com zoom, quadro a quadro">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <Path Width="10" Height="10" Stretch="Uniform" Stroke="{StaticResource Mist}" StrokeThickness="1.4"
+                        Data="M0,4 L0,0 L4,0 M6,0 L10,0 L10,4 M10,6 L10,10 L6,10 M4,10 L0,10 L0,6" VerticalAlignment="Center" />
+                  <TextBlock Text="Ampliar" />
+                </StackPanel>
+              </Button>
+              <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <TextBlock Classes="section" Text="Sprites" />
+                <Border Classes="badge"><TextBlock Classes="mono" Text="{Binding Sprites.Count}" /></Border>
+                <Border Classes="info">
+                  <StackPanel Spacing="1.5" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Ellipse Classes="i-dot" Width="2" Height="2" HorizontalAlignment="Center" />
+                    <Rectangle Classes="i-bar" Width="1.5" Height="5" RadiusX="0.75" RadiusY="0.75" HorizontalAlignment="Center" />
+                  </StackPanel>
+                  <ToolTip.Tip>
+                    <StackPanel Classes="infobox">
+                      <TextBlock Classes="h" Text="O que são os Sprites?" />
+                      <TextBlock Text="Aqui aparecem as folhas de sprites (sprite sheets) que o Claude criou nesta conversa. Cada folha junta todos os quadros de todas as animações numa imagem só — é o que os motores de jogo usam." />
+                      <TextBlock Text="O visualizador toca a animação escolhida em pixels nítidos, sem borrar. Pause para ver quadro a quadro (◀ ▶), mude o zoom, o fundo (xadrez = transparente) e a velocidade, ou marque “Folha inteira” para ver a imagem completa com os limites de cada quadro." />
+                      <TextBlock Text="Quando você pede um ajuste, o Claude cria uma nova versão (por exemplo, heroi-v2) e ela aparece no topo, então as versões antigas não se perdem." />
+                      <TextBlock Text="“Exportar…” salva numa pasta o PNG da folha, o JSON com os quadros e animações (formato Aseprite, aceito por Godot, Phaser, Unity, LÖVE e outros) e um GIF de cada animação. Se você excluir a conversa, tudo é apagado junto — exporte antes o que quiser manter." />
+                    </StackPanel>
+                  </ToolTip.Tip>
+                </Border>
+              </StackPanel>
+            </DockPanel>
+
+            <StackPanel Spacing="8" IsVisible="{Binding HasSelection}">
+              <Border CornerRadius="6" ClipToBounds="True" BorderBrush="{StaticResource Graphite}" BorderThickness="1">
+                <views:SpriteCanvas x:Name="MainCanvas" Height="280"
+                                    Sheet="{Binding Sheet}" Animation="{Binding SelectedAnimation}"
+                                    IsPlaying="{Binding IsPlaying}" Position="{Binding Position}"
+                                    Zoom="{Binding Zoom}" Speed="{Binding Speed}" Backdrop="{Binding Backdrop.Id}"
+                                    ShowSheet="{Binding ShowSheet}" ShowGrid="{Binding ShowGrid}" />
+              </Border>
+
+              <!-- transport -->
+              <DockPanel>
+                <TextBlock DockPanel.Dock="Right" Classes="mono faint" FontSize="11" Text="{Binding FrameLabel}" VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <Button Classes="ms wide" Content="◀" Command="{Binding StepFrameCommand}" CommandParameter="-1" ToolTip.Tip="Quadro anterior" />
+                  <Button Classes="ms wide" Command="{Binding TogglePlayCommand}" ToolTip.Tip="{Binding PlayLabel}">
+                    <Panel>
+                      <Path Width="7" Height="8" Stretch="Uniform" Fill="{StaticResource Mist}" Data="M0,0 L7,4 L0,8 Z" IsVisible="{Binding !IsPlaying}" />
+                      <Path Width="7" Height="8" Stretch="Uniform" Fill="{StaticResource Mist}" Data="M0,0 H2.5 V8 H0 Z M4.5,0 H7 V8 H4.5 Z" IsVisible="{Binding IsPlaying}" />
+                    </Panel>
+                  </Button>
+                  <Button Classes="ms wide" Content="▶" Command="{Binding StepFrameCommand}" CommandParameter="1" ToolTip.Tip="Próximo quadro" />
+                </StackPanel>
+              </DockPanel>
+
+              <!-- animation picker -->
+              <StackPanel Spacing="4">
+                <TextBlock Classes="label-strong" Text="{Binding SelectedVersionLabel, StringFormat='Animações da {0}'}" />
+                <ListBox Classes="chips" ItemsSource="{Binding Animations}" SelectedItem="{Binding SelectedAnimation}">
+                  <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                  </ListBox.ItemsPanel>
+                  <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="sprites:SpriteAnimation">
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="{Binding Name}" FontSize="12" />
+                        <TextBlock Classes="mono faint" FontSize="10" Text="{Binding Count}" VerticalAlignment="Center" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock Classes="faint" FontSize="11" Text="{Binding AnimationInfo}" />
+              </StackPanel>
+
+              <!-- view options -->
+              <Grid ColumnDefinitions="*,8,*,8,*" RowDefinitions="Auto,Auto">
+                <TextBlock Classes="faint" FontSize="11" Text="Zoom" />
+                <TextBlock Grid.Column="2" Classes="faint" FontSize="11" Text="Fundo" />
+                <TextBlock Grid.Column="4" Classes="faint" FontSize="11" Text="Velocidade" />
+                <ComboBox Grid.Row="1" ItemsSource="{Binding ZoomList}" SelectedItem="{Binding Zoom}" HorizontalAlignment="Stretch" FontSize="12" Margin="0,4,0,0">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="x:Int32"><TextBlock Text="{Binding Converter={x:Static views:Texts.ZoomLabel}}" /></DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <ComboBox Grid.Row="1" Grid.Column="2" ItemsSource="{Binding BackdropList}" SelectedItem="{Binding Backdrop}" HorizontalAlignment="Stretch" FontSize="12" Margin="0,4,0,0">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:BackdropChoice"><TextBlock Text="{Binding Label}" /></DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <ComboBox Grid.Row="1" Grid.Column="4" ItemsSource="{Binding SpeedList}" SelectedItem="{Binding Speed}" HorizontalAlignment="Stretch" FontSize="12" Margin="0,4,0,0">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="x:Double"><TextBlock Text="{Binding Converter={x:Static views:Texts.SpeedLabel}}" /></DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+              </Grid>
+              <StackPanel Orientation="Horizontal" Spacing="16">
+                <CheckBox Content="Folha inteira" IsChecked="{Binding ShowSheet}" FontSize="12"
+                          ToolTip.Tip="Mostra a imagem completa com o limite de cada quadro (o quadro atual fica destacado)" />
+                <CheckBox Content="Grade de pixels" IsChecked="{Binding ShowGrid}" FontSize="12"
+                          ToolTip.Tip="Linhas entre os pixels quando o zoom é grande" />
+              </StackPanel>
+              <TextBlock Classes="mono faint" FontSize="11" TextWrapping="Wrap" Text="{Binding SheetSummary}" />
+
+              <!-- game project -->
+              <Border Classes="panel" Padding="12,10" Margin="0,4,0,0">
+                <StackPanel Spacing="8">
+                  <DockPanel>
+                    <Button DockPanel.Dock="Right" Classes="primary" Content="Enviar ao projeto" Click="OnSendToGame"
+                            IsEnabled="{Binding HasGame}"
+                            ToolTip.Tip="Copia o PNG desta versão para o projeto do jogo (substitui o anterior com o mesmo nome)" />
+                    <StackPanel Spacing="2" VerticalAlignment="Center" Margin="0,0,10,0">
+                      <TextBlock Classes="label-strong" Text="{Binding Game.Name, FallbackValue='Sem projeto vinculado'}" />
+                      <TextBlock Classes="mono faint" FontSize="11" TextTrimming="CharacterEllipsis" Text="{Binding SendTarget}" />
+                    </StackPanel>
+                  </DockPanel>
+                  <TextBlock Classes="faint" FontSize="11" TextWrapping="Wrap" Text="{Binding SentInfo}" />
+                  <Button Content="Animar este sprite…" Command="{Binding AnimateCommand}" IsVisible="{Binding IsSprite}"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                          ToolTip.Tip="Abre uma conversa em Animação com a versão mais recente deste sprite como base fixa" />
+                </StackPanel>
+              </Border>
+            </StackPanel>
+
+            <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" Text="{Binding ExportError}"
+                       IsVisible="{Binding ExportError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            <Border Classes="notice" IsVisible="{Binding ExportInfo, Converter={x:Static ObjectConverters.IsNotNull}}">
+              <TextBlock FontSize="12" Foreground="{StaticResource Mist}" TextWrapping="Wrap" Text="{Binding ExportInfo}" />
+            </Border>
+
+            <Border Classes="panel" Padding="16" IsVisible="{Binding HasNoSprites}">
+              <StackPanel Spacing="4">
+                <TextBlock FontSize="13" Text="Nenhum sprite ainda" Foreground="{StaticResource Mist}" />
+                <TextBlock Classes="faint" FontSize="12" TextWrapping="Wrap" Text="As folhas de sprites que o Claude gerar aparecem aqui, animando." />
+              </StackPanel>
+            </Border>
+
+            <!-- versions -->
+            <ListBox ItemsSource="{Binding Sprites}" SelectedItem="{Binding SelectedSprite}" MaxHeight="220"
+                     IsVisible="{Binding !HasNoSprites}">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:MediaFile">
+                  <DockPanel>
+                    <Button DockPanel.Dock="Right" Classes="text row-action" Padding="6,4" Margin="6,0,0,0" VerticalAlignment="Center"
+                            ToolTip.Tip="Opções desta versão">
+                      <StackPanel Orientation="Horizontal" Spacing="2.5">
+                        <Ellipse Width="3" Height="3" Fill="{StaticResource Fog}" />
+                        <Ellipse Width="3" Height="3" Fill="{StaticResource Fog}" />
+                        <Ellipse Width="3" Height="3" Fill="{StaticResource Fog}" />
+                      </StackPanel>
+                      <Button.Flyout>
+                        <MenuFlyout Placement="BottomEdgeAlignedRight">
+                          <MenuItem Header="Abrir no visualizador do sistema" Click="OnOpenSpriteClick" />
+                          <MenuItem Header="Salvar só o PNG…" Click="OnSavePngClick" />
+                          <Separator />
+                          <MenuItem Header="Excluir esta versão…" Click="OnDeleteSpriteClick" />
+                        </MenuFlyout>
+                      </Button.Flyout>
+                    </Button>
+                    <TextBlock DockPanel.Dock="Right" Classes="mono faint" FontSize="11" Text="{Binding Info}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <TextBlock Text="{Binding Name}" FontSize="13" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                      <Border Classes="badge in-use" IsVisible="{Binding IsLatest}"><TextBlock Text="atual" FontSize="11" /></Border>
+                      <Border Classes="badge sent" IsVisible="{Binding IsSent}" ToolTip.Tip="Esta é a versão que está no projeto do jogo">
+                        <TextBlock Text="no projeto" FontSize="11" />
+                      </Border>
+                    </StackPanel>
+                  </DockPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </StackPanel>
+        </Border>
+
+        <!-- GIFs -->
+        <Border Classes="card" IsVisible="{Binding HasGifs}">
+          <StackPanel Spacing="10">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Classes="section" Text="GIFs" />
+              <Border Classes="badge"><TextBlock Classes="mono" Text="{Binding Gifs.Count}" /></Border>
+              <TextBlock Classes="faint" FontSize="11" Text="{Binding SelectedVersionLabel, StringFormat='um por animação da {0}'}" VerticalAlignment="Center" />
+            </StackPanel>
+            <ItemsControl ItemsSource="{Binding Gifs}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:MediaFile">
+                  <DockPanel Margin="2,3">
+                    <Button DockPanel.Dock="Right" Content="Salvar…" FontSize="11" Padding="8,3" Click="OnSaveGifClick" Margin="6,0,0,0" />
+                    <Button DockPanel.Dock="Right" Classes="text" Content="Abrir" FontSize="11" Padding="6,3"
+                            Command="{Binding $parent[UserControl].((vm:ProjectViewModel)DataContext).OpenFileCommand}" CommandParameter="{Binding}" />
+                    <TextBlock DockPanel.Dock="Right" Classes="mono faint" FontSize="11" Text="{Binding Info}" VerticalAlignment="Center" Margin="8,0" />
+                    <TextBlock Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                  </DockPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
+        <!-- assets -->
+        <Border Classes="card">
+          <StackPanel Spacing="12">
+            <DockPanel>
+              <Button DockPanel.Dock="Right" Content="Adicionar" Click="OnAddAssets" />
+              <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <TextBlock Classes="section" Text="Assets" />
+                <Border Classes="info">
+                  <StackPanel Spacing="1.5" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Ellipse Classes="i-dot" Width="2" Height="2" HorizontalAlignment="Center" />
+                    <Rectangle Classes="i-bar" Width="1.5" Height="5" RadiusX="0.75" RadiusY="0.75" HorizontalAlignment="Center" />
+                  </StackPanel>
+                  <ToolTip.Tip>
+                    <StackPanel Classes="infobox">
+                      <TextBlock Classes="h" Text="O que são os Assets?" />
+                      <TextBlock Text="Assets são materiais que o Claude deve usar de verdade: um sprite seu para editar ou animar, uma folha antiga para completar, a paleta de cores do jogo, um tileset, um logo para virar ícone." />
+                      <TextBlock Text="Para adicionar, arraste os arquivos para esta caixa ou clique em “Adicionar”. Depois é só falar no chat, por exemplo: “anime o heroi.png andando” ou “use as cores da paleta.png”." />
+                      <TextBlock Text="Diferença para as referências do chat: referência é só inspiração (“quero algo parecido com isto”); asset é material que entra de verdade no sprite." />
+                      <TextBlock Text="O app guarda uma cópia do arquivo dentro da conversa. O original no seu computador continua igual." />
+                    </StackPanel>
+                  </ToolTip.Tip>
+                </Border>
+              </StackPanel>
+            </DockPanel>
+            <Border x:Name="DropZone" BorderBrush="{StaticResource Graphite}" BorderThickness="1" CornerRadius="6"
+                    Padding="16,18" Background="{StaticResource Tint2}" DragDrop.AllowDrop="True">
+              <TextBlock Classes="faint" FontSize="12" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                         Text="Arraste sprites, folhas, paletas ou tilesets" />
+            </Border>
+            <ItemsControl ItemsSource="{Binding Assets}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:MediaFile">
+                  <DockPanel Margin="2,4">
+                    <Button DockPanel.Dock="Right" Classes="text row-action" Content="✕" FontSize="10" Padding="5,2" Margin="6,0,0,0"
+                            ToolTip.Tip="Remover da conversa" Click="OnDeleteAssetClick" />
+                    <TextBlock DockPanel.Dock="Right" Classes="mono faint" FontSize="11" Text="{Binding Info}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Name}" FontSize="13" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                  </DockPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

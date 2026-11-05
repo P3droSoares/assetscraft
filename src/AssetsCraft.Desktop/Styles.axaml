@@ -1,0 +1,593 @@
+<!--
+  Linear-style tokens ("midnight precision instrument").
+  Surfaces: Void #08090a → Carbon #0f1011 → Obsidian #161718 → Slate #23252a.
+  Text: Paper #fff · Mist #d0d6e0 · Fog #8a8f98 · Ash #62666d.
+  Accent: Acid Lime #e4f222 — only the single primary action per view.
+  Radii: cards 12 · buttons/inputs 6 · badges 4 · pills 9999. Weights: 400 / 500 (≈510) / 600 (≈590).
+-->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Styles.Resources>
+    <SolidColorBrush x:Key="Void" Color="#08090A" />
+    <SolidColorBrush x:Key="Carbon" Color="#0F1011" />
+    <SolidColorBrush x:Key="Obsidian" Color="#161718" />
+    <SolidColorBrush x:Key="Graphite" Color="#23252A" />
+    <SolidColorBrush x:Key="Smoke" Color="#383B3F" />
+    <SolidColorBrush x:Key="Ash" Color="#62666D" />
+    <SolidColorBrush x:Key="Fog" Color="#8A8F98" />
+    <SolidColorBrush x:Key="Mist" Color="#D0D6E0" />
+    <SolidColorBrush x:Key="Bone" Color="#E5E5E6" />
+    <SolidColorBrush x:Key="Paper" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="AcidLime" Color="#E4F222" />
+    <SolidColorBrush x:Key="CoralRed" Color="#EB5757" />
+    <SolidColorBrush x:Key="PulseGreen" Color="#27A644" />
+    <SolidColorBrush x:Key="Tint2" Color="#05FFFFFF" />
+    <SolidColorBrush x:Key="Tint5" Color="#0DFFFFFF" />
+    <SolidColorBrush x:Key="CoralWash" Color="#14EB5757" />
+    <SolidColorBrush x:Key="CoralLine" Color="#4DEB5757" />
+    <FontFamily x:Key="Sans">fonts:Inter#Inter</FontFamily>
+    <FontFamily x:Key="Mono">Berkeley Mono, JetBrains Mono, IBM Plex Mono, Cascadia Mono, Consolas, DejaVu Sans Mono, monospace</FontFamily>
+  </Styles.Resources>
+
+  <!-- ============ base ============ -->
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{StaticResource Void}" />
+    <Setter Property="Foreground" Value="{StaticResource Mist}" />
+    <Setter Property="FontFamily" Value="{StaticResource Sans}" />
+    <Setter Property="FontSize" Value="14" />
+  </Style>
+
+  <Style Selector="TextBlock, SelectableTextBlock">
+    <Setter Property="LetterSpacing" Value="-0.14" />
+  </Style>
+
+  <!-- type roles -->
+  <Style Selector="TextBlock.logo">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{StaticResource Paper}" />
+  </Style>
+  <Style Selector="TextBlock.title">
+    <Setter Property="FontSize" Value="20" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="LetterSpacing" Value="-0.24" />
+    <Setter Property="Foreground" Value="{StaticResource Paper}" />
+  </Style>
+  <Style Selector="TextBlock.heading">
+    <Setter Property="FontSize" Value="24" />
+    <Setter Property="LetterSpacing" Value="-0.29" />
+    <Setter Property="Foreground" Value="{StaticResource Paper}" />
+  </Style>
+  <Style Selector="TextBlock.section">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{StaticResource Mist}" />
+  </Style>
+  <Style Selector="TextBlock.label">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{StaticResource Fog}" />
+  </Style>
+  <Style Selector="TextBlock.label-strong">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{StaticResource Fog}" />
+  </Style>
+  <Style Selector="TextBlock.micro">
+    <Setter Property="FontSize" Value="10" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{StaticResource Ash}" />
+  </Style>
+  <Style Selector="TextBlock.muted, SelectableTextBlock.muted">
+    <Setter Property="Foreground" Value="{StaticResource Fog}" />
+  </Style>
+  <Style Selector="TextBlock.faint, SelectableTextBlock.faint">
+    <Setter Property="Foreground" Value="{StaticResource Ash}" />
+  </Style>
+  <Style Selector="TextBlock.small, SelectableTextBlock.small">
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+  <Style Selector="TextBlock.mono, SelectableTextBlock.mono">
+    <Setter Property="FontFamily" Value="{StaticResource Mono}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="LetterSpacing" Value="-0.16" />
+  </Style>
+
+  <!-- ============ surfaces ============ -->
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{StaticResource Carbon}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Graphite}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="16" />
+  </Style>
+  <Style Selector="Border.panel">
+    <Setter Property="Background" Value="{StaticResource Obsidian}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Graphite}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="Border.hairline-b">
+    <Setter Property="BorderBrush" Value="{StaticResource Graphite}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
+  <Style Selector="Border.hairline-t">
+    <Setter Property="BorderBrush" Value="{StaticResource Graphite}" />
+    <Setter Property="BorderThickness" Value="0,1,0,0" />
+  </Style>
+  <Style Selector="Border.badge">
+    <Setter Property="Background" Value="{StaticResource Tint5}" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="Padding" Value="6,0" />
+    <Setter Property="MinHeight" Value="18" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.badge > TextBlock">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{StaticResource Fog}" />
+  </Style>
+  <Style Selector="Border.kbd">
+    <Setter Property="BorderBrush" Value="{StaticResource Graphite}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="Padding" Value="5,1" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.kbd > TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource Mono}" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="Foreground" Value="{StaticResource Fog}" />
+  </Style>
+
+  <Style Selector="Border.attachment">
+    <Setter Property="Background" Value="{StaticResource Carbon}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Graphite}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="6,5,4,5" />
+  </Style>
+  <Style Selector="Border.attachment.small">
+    <Setter Property="Background" Value="{StaticResource Tint2}" />
+    <Setter Property="Padding" Value="4,3,8,3" />
+  </Style>
+
+  <!-- usage meter -->
+  <!-- usage meter: monochrome; near the limit the bar brightens to paper (no status colors) -->
+  <Style Selector="ProgressBar.usage">
+    <Setter Property="MinHeight" Value="3" />
+    <Setter Property="Height" Value="3" />
+    <Setter Property="CornerRadius" Value="2" />
+    <Setter Property="Background" Value="{StaticResource Graphite}" />
+    <Setter Property="Foreground" Value="{StaticResource Fog}" />
+  </Style>
+  <Style Selector="ProgressBar.usage.hot">
+    <Setter Property="Foreground" Value="{StaticResource Paper}" />
+  </Style>
+  <Style Selector="TextBlock.usage-pct">
+    <Setter Property="Foreground" Value="{StaticResource Fog}" />
+  </Style>
+  <Style Selector="TextBlock.usage-pct.hot">
+    <Setter Property="Foreground" Value="{StaticResource Paper}" />
+  </Style>
+
+  <!-- inline notice (errors etc.): grey text on a hairline panel -->
+  <Style Selector="Border.notice">
+    <Setter Property="Background" Value="{StaticResource Tint2}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Graphite}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="10,8" />
+  </Style>
+
+  <!-- info "i" with a plain-language explanation on hover -->
+  <Style Selector="Border.info">
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
+    <Setter Property="CornerRadius" Value="9999" />
+    <Setter Property="BorderBrush" Value="{StaticResource Smoke}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="ToolTip.ShowDelay" Value="150" />
+    <Setter Property="ToolTip.Placement" Value="Bottom" />
+  </Style>
+  <!-- the "i" is drawn (dot + bar) so it is optically centered regardless of font metrics -->
+  <Style Selector="Border.info Ellipse.i-dot, Border.info Rectangle.i-bar">
+    <Setter Property="Fill" Value="{StaticResource Fog}" />
+  </Style>
+  <Style Selector="Border.info:pointerover">
+    <Setter Property="BorderBrush" Value="{StaticResource Fog}" />
+  </Style>
+  <Style Selector="Border.info:pointerover Ellipse.i-dot, Border.info:pointerover Rectangle.i-bar">
+    <Setter Property="Fill" Value="{StaticResource Paper}" />
+  </Style>
+  <Style Selector="ToolTip">
+    <Setter Property="Background" Value="{StaticResource Obsidian}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Graphite}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="10,7" />
+    <Setter Property="Foreground" Value="{StaticResource Mist}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="MaxWidth" Value="360" />
+  </Style>
+  <Style Selector="StackPanel.infobox">
+    <Setter Property="Spacing" Value="8" />
+    <Setter Property="Width" Value="320" />
+    <Setter Property="Margin" Value="4,6" />
+  </Style>
+  <Style Selector="StackPanel.infobox > TextBlock">
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="LineHeight" Value="18" />
+    <Setter Property="Foreground" Value="{StaticResource Fog}" />
+  </Style>
+  <Style Selector="StackPanel.infobox > TextBlock.h">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{StaticResource Paper}" />
+  </Style>
+
+  <Style Selector="ToggleButton.ms, Button.ms">
+    <Setter Property="Width" Value="18" />
+    <Setter Property="Height" Value="16" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="FontSize" Value="9" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{StaticResource Fog}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Smoke}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="ToggleButton.ms:checked /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.ms:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Paper}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Paper}" />
+    <Setter Property="Foreground" Value="{StaticResource Void}" />
+  </Style>
+  <Style Selector="ToggleButton.ms:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Tint5}" />
+    <Setter Property="Foreground" Value="{StaticResource Paper}" />
+  </Style>
+  <Style Selector="Border.badge.sent">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{StaticResource Paper}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="Border.badge.sent > TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource Paper}" />
+  </Style>
+  <!-- sidebar: asset-type menu -->
+  <Style Selector="ListBox.kinds ListBoxItem">
+    <Setter Property="Padding" Value="10,6" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="MinHeight" Value="0" />
+  </Style>
+  <Style Selector="ListBox.kinds ListBoxItem:disabled TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource Ash}" />
+  </Style>
+  <Style Selector="Button.ms.wide">
+    <Setter Property="Width" Value="30" />
+    <Setter Property="Height" Value="22" />
+    <Setter Property="FontSize" Value="10" />
+  </Style>
+  <!-- animation picker: selectable chips -->
+  <Style Selector="ListBox.chips">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="ListBox.chips ListBoxItem">
+    <Setter Property="Padding" Value="10,4" />
+    <Setter Property="Margin" Value="0,0,6,6" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="BorderBrush" Value="{StaticResource Graphite}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="ListBox.chips ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter, ListBox.chips ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Tint5}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Paper}" />
+    <Setter Property="Foreground" Value="{StaticResource Paper}" />
+  </Style>
+  <Style Selector="Border.badge.in-use">
+    <Setter Property="Background" Value="{StaticResource Tint5}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Smoke}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="Border.badge.in-use > TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource Paper}" />
+  </Style>
+
+  <!-- ============ buttons ============ -->
+  <!-- default = ghost/outline (theme resources in App.axaml) -->
+  <Style Selector="Button">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Padding" Value="12,6" />
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Opacity" Value="0.45" />
+  </Style>
+
+  <!-- the one chromatic action -->
+  <Style Selector="Button.primary">
+    <Setter Property="Background" Value="{StaticResource AcidLime}" />
+    <Setter Property="BorderBrush" Value="{StaticResource AcidLime}" />
+    <Setter Property="Foreground" Value="{StaticResource Void}" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Padding" Value="16,9" />
+  </Style>
+  <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#EDF75C" />
+    <Setter Property="BorderBrush" Value="#EDF75C" />
+    <Setter Property="Foreground" Value="{StaticResource Void}" />
+  </Style>
+  <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#CDDA1F" />
+    <Setter Property="BorderBrush" Value="#CDDA1F" />
+    <Setter Property="Foreground" Value="{StaticResource Void}" />
+  </Style>
+  <Style Selector="Button.primary:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Obsidian}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Graphite}" />
+    <Setter Property="Foreground" Value="{StaticResource Ash}" />
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+
+  <!-- white pill (secondary high-emphasis) -->
+  <Style Selector="Button.pill-white">
+    <Setter Property="Background" Value="{StaticResource Paper}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Paper}" />
+    <Setter Property="Foreground" Value="{StaticResource Void}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="CornerRadius" Value="9999" />
+    <Setter Property="Padding" Value="16,7" />
+  </Style>
+  <Style Selector="Button.pill-white:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Bone}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Bone}" />
+    <Setter Property="Foreground" Value="{StaticResource Void}" />
+  </Style>
+  <Style Selector="Button.pill-white:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Mist}" />
+    <Setter Property="Foreground" Value="{StaticResource Void}" />
+  </Style>
+  <Style Selector="Button.pill-white:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Obsidian}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Graphite}" />
+    <Setter Property="Foreground" Value="{StaticResource Ash}" />
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+
+  <!-- tag / suggestion chip -->
+  <Style Selector="Button.chip">
+    <Setter Property="Background" Value="{StaticResource Tint5}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="9999" />
+    <Setter Property="Padding" Value="12,5" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+  </Style>
+  <Style Selector="Button.chip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#14FFFFFF" />
+  </Style>
+
+  <!-- text-only nav/icon button -->
+  <Style Selector="Button.text">
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="8,4" />
+  </Style>
+
+  <!-- stop / cancel running work: neutral outline (only the lime is chromatic) -->
+  <Style Selector="Button.stop">
+    <Setter Property="Foreground" Value="{StaticResource Mist}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Smoke}" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Padding" Value="14,9" />
+  </Style>
+  <Style Selector="Button.stop:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Tint5}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Fog}" />
+    <Setter Property="Foreground" Value="{StaticResource Paper}" />
+  </Style>
+
+  <!-- neutral filled (dialog confirmation): bone surface, void text -->
+  <Style Selector="Button.solid">
+    <Setter Property="Background" Value="{StaticResource Bone}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Bone}" />
+    <Setter Property="Foreground" Value="{StaticResource Void}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Padding" Value="14,7" />
+  </Style>
+  <Style Selector="Button.solid:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Paper}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Paper}" />
+    <Setter Property="Foreground" Value="{StaticResource Void}" />
+  </Style>
+  <Style Selector="Button.solid:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Mist}" />
+    <Setter Property="Foreground" Value="{StaticResource Void}" />
+  </Style>
+
+  <!-- ============ inputs ============ -->
+  <Style Selector="TextBox">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Padding" Value="12,9" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="CaretBrush" Value="{StaticResource Paper}" />
+    <Setter Property="SelectionBrush" Value="#556366F1" />
+  </Style>
+  <Style Selector="TextBox.composer">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="4,6" />
+    <Setter Property="FontSize" Value="15" />
+  </Style>
+  <Style Selector="TextBox.composer /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="TextBox.composer:focus /template/ Border#PART_BorderElement, TextBox.composer:pointerover /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+
+  <!-- ============ lists ============ -->
+  <Style Selector="ListBox">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="ListBoxItem">
+    <Setter Property="Padding" Value="10,7" />
+    <Setter Property="Margin" Value="0,1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="MinHeight" Value="0" />
+  </Style>
+  <Style Selector="ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Tint2}" />
+  </Style>
+  <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter, ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter, ListBoxItem:selected:focus /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Tint5}" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="ListBox.nav ListBoxItem:selected TextBlock.item-title">
+    <Setter Property="Foreground" Value="{StaticResource Paper}" />
+  </Style>
+
+  <!-- row actions only show on hover / selection -->
+  <Style Selector="ListBoxItem Button.row-action">
+    <Setter Property="Opacity" Value="0" />
+    <Setter Property="Foreground" Value="{StaticResource Ash}" />
+  </Style>
+  <Style Selector="ListBoxItem:pointerover Button.row-action, ListBoxItem:selected Button.row-action, ListBoxItem Button.row-action:flyout-open">
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+  <Style Selector="ListBoxItem Button.row-action:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Tint5}" />
+  </Style>
+
+  <!-- ============ chat ============ -->
+  <Style Selector="Border.msg-user">
+    <Setter Property="Background" Value="{StaticResource Obsidian}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Graphite}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="14,10" />
+    <Setter Property="MaxWidth" Value="720" />
+    <Setter Property="HorizontalAlignment" Value="Right" />
+    <Setter Property="Margin" Value="64,8,0,8" />
+  </Style>
+  <Style Selector="Border.msg-assistant">
+    <Setter Property="Padding" Value="2,6" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="Margin" Value="0,4,64,4" />
+  </Style>
+  <Style Selector="Border.msg-notice">
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="Padding" Value="8,4" />
+    <Setter Property="Margin" Value="0,4" />
+  </Style>
+  <Style Selector="Border.msg-notice.error">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Background" Value="{StaticResource CoralWash}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Graphite}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="12,10" />
+  </Style>
+  <Style Selector="Border.msg-notice.error SelectableTextBlock">
+    <Setter Property="Foreground" Value="{StaticResource Mist}" />
+  </Style>
+
+  <Style Selector="Expander.tool">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Margin" Value="0,2" />
+    <Setter Property="Padding" Value="12,10" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+  <Style Selector="Expander.tool /template/ ToggleButton#ExpanderHeader">
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="Padding" Value="10,4" />
+  </Style>
+
+  <!-- ============ spinner ============ -->
+  <Style Selector="Arc.spinner">
+    <Setter Property="Width" Value="12" />
+    <Setter Property="Height" Value="12" />
+    <Setter Property="Stroke" Value="{StaticResource Mist}" />
+    <Setter Property="StrokeThickness" Value="1.5" />
+    <Setter Property="StrokeLineCap" Value="Round" />
+    <Setter Property="StartAngle" Value="0" />
+    <Setter Property="SweepAngle" Value="260" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Style.Animations>
+      <Animation Duration="0:0:0.9" IterationCount="INFINITE">
+        <KeyFrame Cue="0%"><Setter Property="StartAngle" Value="0" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="StartAngle" Value="360" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <!-- status dots -->
+  <Style Selector="Ellipse.dot">
+    <Setter Property="Width" Value="6" />
+    <Setter Property="Height" Value="6" />
+    <Setter Property="Fill" Value="{StaticResource Ash}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Ellipse.dot.on">
+    <Setter Property="Fill" Value="{StaticResource Paper}" />
+  </Style>
+
+  <!-- ============ menus (⋯) ============ -->
+  <Style Selector="MenuFlyoutPresenter">
+    <Setter Property="Padding" Value="4" />
+    <Setter Property="MinWidth" Value="180" />
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="MenuItem">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Padding" Value="10,6" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="CornerRadius" Value="4" />
+  </Style>
+  <Style Selector="MenuFlyoutPresenter Separator">
+    <Setter Property="Background" Value="{StaticResource Graphite}" />
+    <Setter Property="Margin" Value="-4,4" />
+    <Setter Property="Height" Value="1" />
+  </Style>
+
+  <!-- model picker flyout -->
+  <Style Selector="FlyoutPresenter.picker">
+    <Setter Property="Background" Value="{StaticResource Obsidian}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Graphite}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="4" />
+    <Setter Property="MinWidth" Value="0" />
+  </Style>
+  <Style Selector="Button.pick">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="Padding" Value="10,7" />
+  </Style>
+  <Style Selector="Button.pick:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Tint5}" />
+  </Style>
+
+  <!-- inline rename box -->
+  <Style Selector="TextBox.rename">
+    <Setter Property="CornerRadius" Value="4" />
+  </Style>
+</Styles>

@@ -1,0 +1,92 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>AssetsCraft</AssemblyName>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AssetsCraft.Core\AssetsCraft.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Diagnostics" Version="11.3.22" Condition="'$(Configuration)' == 'Debug'" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.0" />
+  </ItemGroup>
+
+  <!-- Bundled FFmpeg (tool for Claude: frames from reference videos). Run scripts/fetch-ffmpeg.sh first. -->
+  <PropertyGroup>
+    <FfmpegRid>$(RuntimeIdentifier)</FfmpegRid>
+    <FfmpegRid Condition="'$(FfmpegRid)' == '' And $([MSBuild]::IsOSPlatform('Windows'))">win-x64</FfmpegRid>
+    <FfmpegRid Condition="'$(FfmpegRid)' == '' And $([MSBuild]::IsOSPlatform('Linux'))">linux-x64</FfmpegRid>
+    <FfmpegVendorDir>$(MSBuildThisFileDirectory)..\..\vendor\ffmpeg\$(FfmpegRid)</FfmpegVendorDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="$(FfmpegVendorDir)\**\*" LinkBase="ffmpeg" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <Target Name="WarnMissingFfmpeg" BeforeTargets="Build" Condition="!Exists('$(FfmpegVendorDir)\bin')">
+    <Warning Text="FFmpeg embutido não encontrado em $(FfmpegVendorDir). Rode scripts/fetch-ffmpeg.sh $(FfmpegRid) — sem ele o Claude usa o ffmpeg do PATH." />
+  </Target>
+
+  <!--
+    Bundled node runtime: the workspace's npm packages (pngjs, gifenc, resvg) are installed at build time into
+    obj/node-runtime/<rid> (only again when template/workspace/package.json changes) and shipped as <app>/runtime.
+    Conversations link straight to it, so the app never runs npm on first open. Native optional packages
+    (resvg) are picked for the target RID with npm's os/cpu flags, so cross-publishing works.
+  -->
+  <PropertyGroup>
+    <NodeRuntimeDir>$(MSBuildThisFileDirectory)obj\node-runtime\$(FfmpegRid)\</NodeRuntimeDir>
+    <NodeRuntimePackage>$(MSBuildThisFileDirectory)..\..\template\workspace\package.json</NodeRuntimePackage>
+    <NodeRuntimeOs Condition="$(FfmpegRid.StartsWith('win'))">win32</NodeRuntimeOs>
+    <NodeRuntimeOs Condition="$(FfmpegRid.StartsWith('linux'))">linux</NodeRuntimeOs>
+    <NodeRuntimeOs Condition="$(FfmpegRid.StartsWith('osx'))">darwin</NodeRuntimeOs>
+    <NodeRuntimeCpu Condition="$(FfmpegRid.EndsWith('x64'))">x64</NodeRuntimeCpu>
+    <NodeRuntimeCpu Condition="$(FfmpegRid.EndsWith('arm64'))">arm64</NodeRuntimeCpu>
+    <NodeRuntimeLibc Condition="'$(NodeRuntimeOs)' == 'linux'">--libc=glibc</NodeRuntimeLibc>
+  </PropertyGroup>
+  <Target Name="InstallNodeRuntime" BeforeTargets="AssignTargetPaths"
+          Inputs="$(NodeRuntimePackage)" Outputs="$(NodeRuntimeDir).template-hash">
+    <MakeDir Directories="$(NodeRuntimeDir)" />
+    <Delete Files="$(NodeRuntimeDir).template-hash" />
+    <Copy SourceFiles="$(NodeRuntimePackage)" DestinationFolder="$(NodeRuntimeDir)" />
+    <Exec Command="npm install --omit=dev --no-fund --no-audit --os=$(NodeRuntimeOs) --cpu=$(NodeRuntimeCpu) $(NodeRuntimeLibc)"
+          WorkingDirectory="$(NodeRuntimeDir)" />
+    <GetFileHash Files="$(NodeRuntimePackage)" Algorithm="SHA256">
+      <Output TaskParameter="Hash" PropertyName="NodeRuntimeHash" />
+    </GetFileHash>
+    <!-- same stamp SharedRuntime writes: SHA-256 (hex) of the template package.json -->
+    <WriteLinesToFile File="$(NodeRuntimeDir).template-hash" Lines="$(NodeRuntimeHash)" Overwrite="true" />
+  </Target>
+  <Target Name="IncludeNodeRuntime" AfterTargets="InstallNodeRuntime" BeforeTargets="AssignTargetPaths">
+    <ItemGroup>
+      <!-- metadata must stay qualified (%(NodeRuntimeFile.X)): unqualified it would batch over every None item -->
+      <NodeRuntimeFile Include="$(NodeRuntimeDir)node_modules\**\*" />
+      <None Include="@(NodeRuntimeFile)" Link="runtime\node_modules\%(NodeRuntimeFile.RecursiveDir)%(NodeRuntimeFile.Filename)%(NodeRuntimeFile.Extension)"
+            CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+      <None Include="$(NodeRuntimeDir)package.json" Link="runtime\package.json"
+            CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+      <None Include="$(NodeRuntimeDir).template-hash" Link="runtime\.template-hash"
+            CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+    <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\..\template\**\*" Exclude="..\..\template\**\node_modules\**" LinkBase="template" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
