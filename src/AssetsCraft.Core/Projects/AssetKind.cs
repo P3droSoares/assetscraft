@@ -1,6 +1,6 @@
 namespace AssetsCraft.Core.Projects;
 
-/// <summary>What a conversation produces. Each kind has its own section in the sidebar.</summary>
+/// <summary>What a conversation produces. Animation is not created directly: it is the "Animar" step of a sprite.</summary>
 public enum AssetKind { Sprite, Tile, Animation, Sfx, Music, Cutscene }
 
 /// <param name="Folder">Subfolder of the game's Content where "Enviar ao projeto" puts the PNG.</param>
@@ -17,9 +17,9 @@ public static class AssetKinds
             "Personagens, inimigos, itens e objetos, desenhados parados (pose idle).",
             "TIPO DESTA CONVERSA: SPRITE ESTÁTICO. Gere apenas 1 quadro: a pose idle/neutra do sprite, sem animação " +
             "(uma única animação \"idle\" com 1 quadro). Não crie quadros de andar, pular, atacar etc.: animações são " +
-            "feitas depois, numa conversa da seção Animação que parte deste sprite. Desenhe pensando nisso: pose " +
+            "feitas no próximo passo do fluxo (Animar), que parte deste sprite. Desenhe pensando nisso: pose " +
             "neutra, de frente ou 3/4, pés na última linha útil, 1px livre na borda para o contorno. Se o usuário pedir " +
-            "animação aqui, faça o idle e diga que a animação é feita em Animação → Nova animação. Uma conversa = um sprite."),
+            "animação aqui, faça o idle e diga que, quando ele aprovar a versão, é só clicar em “Animar” (próximo passo). Uma conversa = um sprite."),
         new(AssetKind.Tile, "Tiles", "tile", "Novo tileset", "Tiles", true,
             "Tiles e tilesets estáticos que encaixam entre si.",
             "TIPO DESTA CONVERSA: TILES ESTÁTICOS. Cada tile é um quadro de uma animação \"tiles\" (fps irrelevante); " +

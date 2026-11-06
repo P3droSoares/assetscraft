@@ -10,7 +10,18 @@
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
+    <Version>0.1.0</Version>
+    <Product>AssetsCraft</Product>
+    <Description>AI pixel art sprite and sprite sheet generator for game developers, powered by Claude Code.</Description>
+    <Authors>Pedro Cruz</Authors>
+    <Copyright>Copyright © 2026 Pedro Cruz</Copyright>
+    <RepositoryUrl>https://github.com/P3droSoares/assetscraft</RepositoryUrl>
   </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\icon.png" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\AssetsCraft.Core\AssetsCraft.Core.csproj" />

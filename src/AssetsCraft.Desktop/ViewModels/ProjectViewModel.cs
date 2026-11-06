@@ -62,17 +62,17 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
 
     private readonly ProjectSession _session;
     private readonly Func<GameProject?> _game;
-    private readonly Func<ProjectViewModel, Task>? _animate;
+    private readonly IAssetFlow? _flow;
     private bool _syncQueued;
     private bool _wasBusy;
 
     /// <param name="game">Linked game project of this conversation (read each time: it can be re-linked).</param>
-    /// <param name="animate">Opens a new animation conversation using this sprite as base.</param>
-    public ProjectViewModel(ProjectSession session, ConversationItem item, Func<GameProject?> game, Func<ProjectViewModel, Task>? animate = null)
+    /// <param name="flow">The asset this conversation belongs to (next step, confirmations, progress).</param>
+    public ProjectViewModel(ProjectSession session, ConversationItem item, Func<GameProject?> game, IAssetFlow? flow = null)
     {
         _session = session;
         _game = game;
-        _animate = animate;
+        _flow = flow;
         Item = item;
         _session.Changed += OnSessionChanged;
         _session.Renamed += OnRenamed;
@@ -85,6 +85,7 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
         // first open after an update (new shared packages) or an old private node_modules: fix it silently
         if (!session.DependenciesReady && !session.IsInstalling) _ = Task.Run(session.InstallDependenciesAsync);
         RefreshModels();
+        _ = RefreshGameStyleAsync();
         Sync();
         RefreshFiles();
         SelectedSprite = Sprites.FirstOrDefault();
@@ -92,7 +93,7 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
 
     public SpriteProject Project => _session.Project;
 
-    /// <summary>Sidebar entry (holds the conversation's size shown next to the title).</summary>
+    /// <summary>The conversation behind this view (name and size on disk).</summary>
     public ConversationItem Item { get; }
     public ProjectSession Session => _session;
     public string Name => Project.Name;
@@ -102,6 +103,24 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
     // ------------------------------------------------------------------ asset type
 
     public AssetKindInfo KindInfo => AssetKinds.Get(Project.Kind);
+
+    // ------------------------------------------------------------------ game style
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasGameStyle), nameof(GameStyleText))]
+    private int _gameStyleCount;
+
+    public bool HasGameStyle => GameStyleCount > 0;
+    public string GameStyleText => GameStyleCount == 1
+        ? $"O Claude vai analisar 1 imagem do {Game?.Name ?? "jogo"} e seguir o mesmo estilo."
+        : $"O Claude vai analisar {GameStyleCount} imagens do {Game?.Name ?? "jogo"} e seguir o mesmo estilo (paleta, contorno, sombreamento, tamanho).";
+
+    private async Task RefreshGameStyleAsync()
+    {
+        var game = Game;
+        var count = await Task.Run(() => _session.SyncGameStyle(game));
+        Dispatcher.UIThread.Post(() => GameStyleCount = count);
+    }
     public bool IsSprite => Project.Kind == AssetKind.Sprite;
     public bool IsAnimation => Project.Kind == AssetKind.Animation;
     public string KindBadge => IsAnimation && Project.BaseSpriteName is { } b ? $"Animação · base {TitleOf(b)}" : KindInfo.Singular;
@@ -113,11 +132,11 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
     };
     public string EmptyText => Project.Kind switch
     {
-        AssetKind.Animation => "O sprite base fica fixo. Descreva o movimento (andar, pular, atacar…), quantos quadros e a velocidade. " +
-                               "Cada pedido acrescenta uma animação à folha; veja ao lado, quadro a quadro.",
+        AssetKind.Animation => "O sprite aprovado fica fixo. Descreva o movimento (andar, pular, atacar…), quantos quadros e a velocidade. " +
+                               "Cada pedido acrescenta uma animação à mesma folha; ela toca ao lado, quadro a quadro.",
         AssetKind.Tile => "Descreva o terreno ou a parede, o tamanho do tile e a paleta. O Claude desenha tiles estáticos que encaixam entre si.",
-        _ => "Descreva o sprite (tamanho, estilo, paleta) e, se quiser, anexe referências — ou arraste-as para cá. " +
-             "O Claude desenha só a pose idle, sem animação; depois, use “Animar” para criar as animações dele.",
+        _ => "Descreva o sprite (tamanho, estilo, paleta) e, se quiser, anexe ou arraste imagens para cá. " +
+             "O Claude desenha a pose parada; quando gostar de uma versão, o próximo passo é animá-la aqui mesmo.",
     };
     public string ComposerHint => Project.Kind switch
     {
@@ -149,6 +168,60 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
     /// <summary>The destination already has a PNG (another version, or edited in the game) that would be replaced.</summary>
     public bool SendWouldReplace => Game is { } g && SelectedSprite is not null && File.Exists(System.IO.Path.Combine(g.Path, SendTarget));
 
+    /// <summary>Copies the selected version's PNG into the game, asking first if it would replace a file.</summary>
+    [RelayCommand]
+    private async Task SendToGame()
+    {
+        if (SelectedSprite is not { } sprite) return;
+        if (Game is not { } game)
+        {
+            ExportError = "Vincule o projeto do jogo (no topo da barra lateral) para enviar.";
+            return;
+        }
+        // never write into the game without an explicit confirmation
+        if (_flow is null) return;
+        var target = System.IO.Path.Combine(game.Path, SendTarget);
+        var ours = Project.SentPath is { } p && System.IO.Path.GetFullPath(p) == System.IO.Path.GetFullPath(target);
+        var body = $"Copia o PNG da {sprite.VersionLabel} para {SendTarget} no projeto {game.Name}. ";
+        if (ours) body += $"Substitui a {VersionOf(Project.SentVersion ?? "")} que você enviou antes. ";
+        else if (SendWouldReplace) body += "Esse arquivo já existe no jogo: ele será substituído, mas o app guarda uma cópia e o devolve se você usar “Remover do jogo”. ";
+        else if (Project.SentPath is not null && Game is { } g)
+            body += $"O envio anterior ({System.IO.Path.GetRelativePath(g.Path, Project.SentPath).Replace('\\', '/')}) será removido do jogo. ";
+        body += "Dá para desfazer depois com “Remover do jogo”.";
+        if (!await _flow.ConfirmAsync($"Enviar a {sprite.VersionLabel} ao jogo?", body, "Enviar")) return;
+        await SendSelectedToGameAsync();
+    }
+
+    public bool IsSentToGame => Project.SentPath is not null;
+
+    /// <summary>Undo of "Enviar ao jogo", after confirmation.</summary>
+    [RelayCommand]
+    private async Task RemoveFromGame()
+    {
+        if (Game is not { } game || Project.SentPath is not { } sent || _flow is null) return;
+        var rel = System.IO.Path.GetRelativePath(game.Path, sent).Replace('\\', '/');
+        var changed = await Task.Run(() => ConversationFiles.SentFileChanged(Project));
+        var body = $"Apaga {rel} do projeto {game.Name}. " +
+                   (Project.SentBackup is not null ? "O arquivo que estava lá antes do envio volta para o lugar. "
+                                                   : "Pastas que ficarem vazias também são removidas. ") +
+                   (changed ? "Atenção: esse PNG foi alterado no jogo depois do envio; essas alterações se perdem. " : "") +
+                   "As versões continuam aqui no app.";
+        if (!await _flow.ConfirmAsync($"Remover {rel} do jogo?", body, "Remover do jogo")) return;
+        try
+        {
+            await Task.Run(() => _session.RemoveFromGame(game));
+            ExportError = null;
+            ExportInfo = $"Removido do projeto {game.Name}: {rel}";
+            RefreshFiles();
+            OnPropertyChanged(nameof(SentInfo));
+            OnPropertyChanged(nameof(IsSentToGame));
+        }
+        catch (Exception ex)
+        {
+            ExportError = $"Não foi possível remover: {ex.Message}";
+        }
+    }
+
     public async Task SendSelectedToGameAsync()
     {
         if (Game is not { } game || SelectedSprite is not { } sprite) return;
@@ -159,6 +232,7 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
             ExportInfo = $"Enviado ao projeto {game.Name}: {System.IO.Path.GetRelativePath(game.Path, dest).Replace('\\', '/')}";
             RefreshFiles();
             OnPropertyChanged(nameof(SentInfo));
+            OnPropertyChanged(nameof(IsSentToGame));
         }
         catch (Exception ex)
         {
@@ -169,8 +243,25 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task Animate()
     {
-        if (_animate is not null && IsSprite && Sprites.Count > 0) await _animate(this);
+        if (_flow is not null && IsSprite && SelectedSprite is not null) await _flow.AnimateAsync(this);
     }
+
+    // ------------------------------------------------------------------ next step (sticky footer)
+
+    /// <summary>Sprite: "Animar a v3 →" (send the static pose is secondary). Tiles/animation: send to the game.</summary>
+    [RelayCommand]
+    private Task PrimaryAction() => IsSprite ? Animate() : SendToGame();
+
+    public string PrimaryActionLabel => SelectedSprite is null ? ""
+        : IsSprite ? $"Animar a {SelectedVersionLabel}  →"
+        : $"Enviar a {SelectedVersionLabel} ao jogo";
+
+    public string PrimaryActionHint => SelectedSprite is null ? ""
+        : IsSprite ? "Próximo passo. Esta versão vira a base fixa das animações."
+        : SendTarget.Length > 0 ? $"Vai para {SendTarget}" : "";
+
+    public string SecondarySendLabel => $"Só enviar a {SelectedVersionLabel} parada";
+    public string StepTitle => IsAnimation ? "Animações" : HasNoSprites ? "Versões" : "Versão escolhida";
     public IReadOnlyList<BackdropChoice> BackdropList => Backdrops;
     public IReadOnlyList<int> ZoomList => ZoomChoices;
     public IReadOnlyList<double> SpeedList => SpeedChoices;
@@ -241,6 +332,9 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(SendTarget));
         OnPropertyChanged(nameof(SentInfo));
         OnPropertyChanged(nameof(HasGame));
+        OnPropertyChanged(nameof(PrimaryActionLabel));
+        OnPropertyChanged(nameof(PrimaryActionHint));
+        OnPropertyChanged(nameof(SecondarySendLabel));
         LoadSheet();
     }
 
@@ -260,6 +354,8 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
         Replace(Gifs, SelectedSprite is null ? [] : ConversationFiles.Gifs(SelectedSprite.FullPath).Select(g =>
             new MediaFile(g, System.IO.Path.GetFileName(g), Size(new FileInfo(g).Length))));
         OnPropertyChanged(nameof(HasGifs));
+        OnPropertyChanged(nameof(HasFiles));
+        OnPropertyChanged(nameof(FilesCount));
     }
 
     [RelayCommand]
@@ -381,6 +477,10 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
     public bool HasNoSprites => Sprites.Count == 0;
     public bool HasNoAssets => Assets.Count == 0;
 
+    /// <summary>"Arquivos" drawer: materials used in the sprite + GIFs of the selected version.</summary>
+    public int FilesCount => Assets.Count + Gifs.Count;
+    public bool HasFiles => FilesCount > 0;
+
     /// <summary>Raised after messages change so the view can auto-scroll.</summary>
     public event Action? MessagesUpdated;
 
@@ -393,11 +493,13 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
     {
         var text = Input;
         var files = PendingAttachments.Select(a => a.Path).ToList();
+        var materials = PendingAttachments.Where(a => a.UseAsMaterial).Select(a => a.Path).ToHashSet();
         Input = "";
         PendingAttachments.Clear();
         _wasBusy = true;
         IsBusy = true;
-        await _session.SendAsync(text, files);
+        await RefreshGameStyleAsync(); // picks up sprites added to the game since the conversation opened
+        await _session.SendAsync(text, files, materials);
         _ = Item.RefreshSizeAsync(); // references were copied into the conversation
     }
 
@@ -453,10 +555,14 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
         HasNodeModules = Project.HasNodeModules;
         OnPropertyChanged(nameof(HasNoSprites));
         OnPropertyChanged(nameof(HasNoAssets));
+        OnPropertyChanged(nameof(HasFiles));
+        OnPropertyChanged(nameof(FilesCount));
+        OnPropertyChanged(nameof(StepTitle));
         _ = Item.RefreshSizeAsync();
         var selected = Sprites.FirstOrDefault(v => v.FullPath == keep) ?? Sprites.FirstOrDefault();
         if (selected == SelectedSprite) LoadSheet(); // same version: metadata/GIFs may have changed
         else SelectedSprite = selected;
+        _flow?.OnFilesChanged();
     }
 
     [RelayCommand]

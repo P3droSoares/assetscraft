@@ -97,10 +97,80 @@ public static class ConversationFiles
             ? ProjectStore.SpriteTitle(baseName)
             : ProjectStore.SpriteTitle(sheetFull);
         var dest = SendDestination(game, project.Kind, name);
+        var ownsDest = project.SentPath is { } prev && PathEquals(prev, dest);
+        if (!ownsDest)
+        {
+            // first send to this destination: remember what was there so "Remover do jogo" can put it back
+            if (project.SentPath is not null) RemoveFromGame(project, game);
+            project.SentBackup = null;
+            project.SentCreatedDir = null;
+            if (File.Exists(dest))
+            {
+                var backupDir = Path.Combine(project.Path, ".assetscraft", "replaced");
+                Directory.CreateDirectory(backupDir);
+                var backup = Path.Combine(backupDir, Path.GetFileName(dest));
+                File.Copy(dest, backup, overwrite: true);
+                project.SentBackup = backup;
+            }
+            project.SentCreatedDir = TopmostMissing(Path.GetDirectoryName(dest)!);
+        }
         Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
         File.Copy(sheetFull, dest, overwrite: true);
         return dest;
     }
+
+    /// <summary>The PNG in the game is no longer the version that was sent (edited in the game since).</summary>
+    public static bool SentFileChanged(SpriteProject project)
+    {
+        if (project.SentPath is not { } dest || !File.Exists(dest) || project.SentVersion is not { } v) return false;
+        var sent = Path.Combine(project.OutputDir, v);
+        if (!File.Exists(sent)) return false;
+        return !File.ReadAllBytes(sent).AsSpan().SequenceEqual(File.ReadAllBytes(dest));
+    }
+
+    /// <summary>
+    /// Undoes "Enviar ao jogo": deletes the PNG that was sent, puts back the file it had replaced (if any) and
+    /// removes the folders the send created, when empty. Only touches paths inside the game folder.
+    /// </summary>
+    public static void RemoveFromGame(SpriteProject project, GameProject game)
+    {
+        if (project.SentPath is not { } dest) return;
+        var root = Path.GetFullPath(game.Path).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        var full = Path.GetFullPath(dest);
+        if (!full.StartsWith(root, StringComparison.Ordinal))
+            throw new InvalidOperationException($"Recusado: {dest} está fora do projeto do jogo.");
+
+        if (File.Exists(full)) File.Delete(full);
+        if (project.SentBackup is { } backup && File.Exists(backup))
+        {
+            File.Copy(backup, full, overwrite: true);
+            File.Delete(backup);
+        }
+        else
+        {
+            // folders created by the send (or, for sends from before this was tracked, any empty parent)
+            var stop = project.SentCreatedDir is { } created ? Path.GetDirectoryName(Path.GetFullPath(created)) : root.TrimEnd(Path.DirectorySeparatorChar);
+            for (var dir = Path.GetDirectoryName(full); dir is not null && dir.StartsWith(root, StringComparison.Ordinal)
+                     && !PathEquals(dir, stop!) && Directory.Exists(dir) && !Directory.EnumerateFileSystemEntries(dir).Any();
+                 dir = Path.GetDirectoryName(dir))
+                Directory.Delete(dir);
+        }
+        project.SentVersion = null;
+        project.SentPath = null;
+        project.SentBackup = null;
+        project.SentCreatedDir = null;
+    }
+
+    private static string? TopmostMissing(string dir)
+    {
+        string? missing = null;
+        for (var d = Path.GetFullPath(dir); d is not null && !Directory.Exists(d); d = Path.GetDirectoryName(d)) missing = d;
+        return missing;
+    }
+
+    private static bool PathEquals(string a, string b) =>
+        string.Equals(Path.GetFullPath(a).TrimEnd(Path.DirectorySeparatorChar), Path.GetFullPath(b).TrimEnd(Path.DirectorySeparatorChar),
+            OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 
     public static string SendDestination(GameProject game, AssetKind kind, string name) =>
         Path.Combine(game.ContentRoot, AssetKinds.Get(kind).Folder, name + ".png");

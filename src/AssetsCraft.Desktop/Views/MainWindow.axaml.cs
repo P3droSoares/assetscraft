@@ -47,7 +47,6 @@ public partial class MainWindow : Window
         if (_vm is null) return;
         _vm.Confirm = (title, body, confirm) => ConfirmDialog.AskAsync(this, title, body, confirm);
         _vm.PickFolder = PickGameFolderAsync;
-        _vm.PickBaseSprite = candidates => new BasePickerDialog(candidates).ShowDialog<BaseCandidate?>(this);
         _vm.RenameStarted += FocusRenameBox;
         _vm.FocusComposerRequested += FocusComposer;
     }
@@ -85,8 +84,15 @@ public partial class MainWindow : Window
         this.GetVisualDescendants().OfType<TextBox>().FirstOrDefault(t => t.Name == "InputBox")?.Focus(),
         DispatcherPriority.Background);
 
-    /// <summary>Focuses and selects the inline rename box of the conversation being renamed.</summary>
-    private void FocusRenameBox(ConversationItem item)
+    private void OnNewPicked(object? sender, RoutedEventArgs e)
+    {
+        if (_vm is null || (sender as Control)?.DataContext is not NewAssetChoice choice) return;
+        NewButton.Flyout?.Hide();
+        _vm.NewAssetCommand.Execute(choice);
+    }
+
+    /// <summary>Focuses and selects the inline rename box of the asset being renamed.</summary>
+    private void FocusRenameBox(AssetItem item)
     {
         Dispatcher.UIThread.Post(() =>
         {
@@ -101,7 +107,7 @@ public partial class MainWindow : Window
 
     private void OnRenameKeyDown(object? sender, KeyEventArgs e)
     {
-        if (_vm is null || (sender as Control)?.DataContext is not ConversationItem item) return;
+        if (_vm is null || (sender as Control)?.DataContext is not AssetItem item) return;
         if (e.Key == Key.Enter)
         {
             _vm.CommitRename(item);
@@ -116,6 +122,6 @@ public partial class MainWindow : Window
 
     private void OnRenameLostFocus(object? sender, RoutedEventArgs e)
     {
-        if (_vm is not null && (sender as Control)?.DataContext is ConversationItem item) _vm.CommitRename(item);
+        if (_vm is not null && (sender as Control)?.DataContext is AssetItem item) _vm.CommitRename(item);
     }
 }

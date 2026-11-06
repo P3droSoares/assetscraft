@@ -590,4 +590,149 @@
   <Style Selector="TextBox.rename">
     <Setter Property="CornerRadius" Value="4" />
   </Style>
+
+  <!-- ============ linear flow ============ -->
+  <!-- stepper: Descrever → Refinar → Animar → Enviar -->
+  <Style Selector="Button.step">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="8,6" />
+    <Setter Property="CornerRadius" Value="9999" />
+  </Style>
+  <Style Selector="Button.step:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Tint5}" />
+  </Style>
+  <Style Selector="Button.step.locked">
+    <Setter Property="Cursor" Value="Arrow" />
+  </Style>
+  <Style Selector="Button.step.locked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.step Border.step-dot">
+    <Setter Property="Width" Value="22" />
+    <Setter Property="Height" Value="22" />
+    <Setter Property="CornerRadius" Value="11" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="{StaticResource Smoke}" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.step Border.step-dot TextBlock">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{StaticResource Fog}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.step TextBlock.step-label">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Foreground" Value="{StaticResource Fog}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.step.done Border.step-dot">
+    <Setter Property="Background" Value="{StaticResource Tint5}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Fog}" />
+  </Style>
+  <Style Selector="Button.step.done TextBlock.step-label">
+    <Setter Property="Foreground" Value="{StaticResource Mist}" />
+  </Style>
+  <Style Selector="Button.step.active Border.step-dot">
+    <Setter Property="Background" Value="{StaticResource AcidLime}" />
+    <Setter Property="BorderBrush" Value="{StaticResource AcidLime}" />
+  </Style>
+  <Style Selector="Button.step.active Border.step-dot TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource Void}" />
+  </Style>
+  <Style Selector="Button.step.active TextBlock.step-label">
+    <Setter Property="Foreground" Value="{StaticResource Paper}" />
+    <Setter Property="FontWeight" Value="Medium" />
+  </Style>
+  <Style Selector="Button.step.locked Border.step-dot">
+    <Setter Property="BorderBrush" Value="{StaticResource Graphite}" />
+  </Style>
+  <Style Selector="Button.step.locked TextBlock.step-label, Button.step.locked Border.step-dot TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource Ash}" />
+  </Style>
+  <Style Selector="Border.step-line">
+    <Setter Property="Height" Value="1" />
+    <Setter Property="Width" Value="28" />
+    <Setter Property="Background" Value="{StaticResource Graphite}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <!-- sidebar thumbnail -->
+  <Style Selector="Border.thumb">
+    <Setter Property="Width" Value="36" />
+    <Setter Property="Height" Value="36" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="ClipToBounds" Value="True" />
+    <Setter Property="Background" Value="{StaticResource Obsidian}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Graphite}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="Ellipse.sent-dot">
+    <Setter Property="Width" Value="6" />
+    <Setter Property="Height" Value="6" />
+    <Setter Property="Fill" Value="{StaticResource PulseGreen}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <!-- big choice card ("O que vamos criar?") -->
+  <Style Selector="Button.choice">
+    <Setter Property="Background" Value="{StaticResource Carbon}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Graphite}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="18,16" />
+    <Setter Property="Width" Value="220" />
+    <Setter Property="Height" Value="92" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Top" />
+  </Style>
+  <Style Selector="Button.choice:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource Obsidian}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Fog}" />
+  </Style>
+
+  <!-- onboarding step number -->
+  <Style Selector="Border.num">
+    <Setter Property="Width" Value="24" />
+    <Setter Property="Height" Value="24" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Background" Value="{StaticResource Tint5}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Smoke}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+  </Style>
+  <Style Selector="Border.num > TextBlock">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{StaticResource Mist}" />
+  </Style>
+
+  <!-- sticky "next step" footer of the side panel -->
+  <Style Selector="Border.cta">
+    <Setter Property="Background" Value="{StaticResource Carbon}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Smoke}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Padding" Value="14" />
+  </Style>
+
+  <!-- attachment "use in the sprite" switch -->
+  <Style Selector="ToggleButton.use">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="Padding" Value="8,2" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="CornerRadius" Value="9999" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{StaticResource Smoke}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Foreground" Value="{StaticResource Fog}" />
+  </Style>
+  <Style Selector="ToggleButton.use:checked /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.use:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{StaticResource AcidLime}" />
+    <Setter Property="BorderBrush" Value="{StaticResource AcidLime}" />
+    <Setter Property="Foreground" Value="{StaticResource Void}" />
+  </Style>
 </Styles>

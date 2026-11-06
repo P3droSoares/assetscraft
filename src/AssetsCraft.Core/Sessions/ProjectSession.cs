@@ -34,7 +34,11 @@ public sealed class ProjectSession : IAsyncDisposable
         _messages = LoadChat();
         // what this conversation may produce (static sprite, tiles, animation of a base sprite…)
         var kind = AssetKinds.Get(project.Kind);
-        _claude = new ClaudeCodeSession(options.WithAppendedPrompt(kind.Instructions), project.Path, project.SessionId);
+        // new sprites and tiles follow the style of the PNGs already in the linked game (animations keep their base)
+        var instructions = project.Kind is AssetKind.Sprite or AssetKind.Tile
+            ? kind.Instructions + "\n\n" + GameStyleSample.Instructions
+            : kind.Instructions;
+        _claude = new ClaudeCodeSession(options.WithAppendedPrompt(instructions), project.Path, project.SessionId);
         if (project.Model is not null) _claude.Model = project.Model;
         _claude.EventReceived += OnClaudeEvent;
 
@@ -112,7 +116,19 @@ public sealed class ProjectSession : IAsyncDisposable
     /// project, so they are removed with it). Images also go inline so Claude sees them right away;
     /// other kinds are described with how to inspect them (frames via ffmpeg, sprite inspect, Read for PDFs).
     /// </summary>
-    public async Task SendAsync(string text, IReadOnlyList<string> attachmentPaths)
+    /// <param name="materials">Subset of <paramref name="attachmentPaths"/> to use for real in the sprite (edit,
+    /// crop, reuse the palette): copied into assets/ instead of references/.</param>
+    /// <summary>PNGs of the linked game copied as style reference (see <see cref="GameStyleSample"/>).</summary>
+    public int GameStyleCount { get; private set; }
+
+    /// <summary>Refreshes references/game-style/ from the linked game (sprites and tiles only).</summary>
+    public int SyncGameStyle(GameProject? game)
+    {
+        if (Project.Kind is not (AssetKind.Sprite or AssetKind.Tile)) return 0;
+        return GameStyleCount = GameStyleSample.Sync(Project, game);
+    }
+
+    public async Task SendAsync(string text, IReadOnlyList<string> attachmentPaths, IReadOnlySet<string>? materials = null)
     {
         text = (text ?? "").Trim();
         if (text.Length == 0 && attachmentPaths.Count == 0) return;
@@ -129,16 +145,18 @@ public sealed class ProjectSession : IAsyncDisposable
         {
             foreach (var src in attachmentPaths.Where(File.Exists))
             {
-                var rel = await CopyReferenceAsync(src);
+                var material = materials?.Contains(src) == true;
+                var rel = await CopyIntoAsync(src, material ? Project.AssetsDir : Project.ReferencesDir);
                 attached.Add(rel);
                 var full = Path.Combine(Project.Path, rel);
                 var kind = ReferenceKind(full);
                 var size = new FileInfo(full).Length;
+                var tag = material ? "MATERIAL, use de verdade no sprite" : "referência";
 
                 if (kind == "imagem" && size <= MaxInlineImageBytes && ImageMediaType(full) is { } mt)
                 {
                     images.Add(new ImageInput(mt, await File.ReadAllBytesAsync(full)));
-                    notes.AppendLine($"- `{rel}` (imagem, anexada acima)");
+                    notes.AppendLine($"- `{rel}` (imagem, {tag}, anexada acima)");
                 }
                 else
                 {
@@ -150,7 +168,7 @@ public sealed class ProjectSession : IAsyncDisposable
                         "imagem" => "leia com a ferramenta Read; para pixel art use `node tools/sprite.mjs inspect ARQ` para ver a paleta e a grade de pixels",
                         _ => "abra com a ferramenta Read se for texto",
                     };
-                    notes.AppendLine($"- `{rel}` ({kind}) — {how}");
+                    notes.AppendLine($"- `{rel}` ({kind}, {tag}) — {how}");
                 }
             }
         }
@@ -173,10 +191,15 @@ public sealed class ProjectSession : IAsyncDisposable
         if (attached.Count > 0)
         {
             prompt = (text.Length > 0 ? text : "Use as referências anexadas para criar o sprite.") +
-                     "\n\n---\nAnexos de referência (copiados para o projeto):\n" + notes +
-                     "Use-os como referência de estilo, paleta, proporções, poses e movimento. " +
-                     "Se algum deve ser usado de verdade no sprite (editar, recortar, aproveitar a paleta), copie-o para assets/.";
+                     "\n\n---\nAnexos (copiados para o projeto):\n" + notes +
+                     "Os marcados como MATERIAL já estão em assets/: use-os de verdade (editar, recortar, animar, aproveitar a paleta). " +
+                     "Os demais são referência de estilo, paleta, proporções, poses e movimento; se algum deles precisar entrar " +
+                     "de verdade no sprite, copie-o para assets/.";
         }
+
+        if (isFirstRequest && GameStyleCount > 0)
+            prompt += $"\n\n---\nEstilo do jogo: há {GameStyleCount} PNGs do projeto em {GameStyleSample.Folder}/ (veja o INDEX.md). " +
+                      "Analise-os antes de desenhar e siga esse estilo, a menos que eu peça outro.";
 
         try
         {
@@ -206,13 +229,13 @@ public sealed class ProjectSession : IAsyncDisposable
         Renamed?.Invoke();
     }
 
-    private async Task<string> CopyReferenceAsync(string source)
+    private async Task<string> CopyIntoAsync(string source, string dir)
     {
-        Directory.CreateDirectory(Project.ReferencesDir);
+        Directory.CreateDirectory(dir);
         var name = Path.GetFileNameWithoutExtension(source);
         var ext = Path.GetExtension(source);
-        var dest = Path.Combine(Project.ReferencesDir, name + ext);
-        for (var i = 2; File.Exists(dest); i++) dest = Path.Combine(Project.ReferencesDir, $"{name}-{i}{ext}");
+        var dest = Path.Combine(dir, name + ext);
+        for (var i = 2; File.Exists(dest); i++) dest = Path.Combine(dir, $"{name}-{i}{ext}");
         await using (var src = File.OpenRead(source))
         await using (var dst = File.Create(dest))
             await src.CopyToAsync(dst);
@@ -422,9 +445,12 @@ public sealed class ProjectSession : IAsyncDisposable
     /// Sprite sheets in out/ (top level only: gif/, .preview/ and .sources/ are byproducts of each render),
     /// newest first. PNGs without metadata are listed too (shown as a single frame).
     /// </summary>
-    public IReadOnlyList<FileInfo> ListSprites() =>
-        Directory.Exists(Project.OutputDir)
-            ? new DirectoryInfo(Project.OutputDir)
+    public IReadOnlyList<FileInfo> ListSprites() => ListSprites(Project);
+
+    /// <summary>Same as <see cref="ListSprites()"/> without opening a session (sidebar thumbnails and progress).</summary>
+    public static IReadOnlyList<FileInfo> ListSprites(SpriteProject project) =>
+        Directory.Exists(project.OutputDir)
+            ? new DirectoryInfo(project.OutputDir)
                 .EnumerateFiles("*", SearchOption.TopDirectoryOnly)
                 .Where(f => string.Equals(f.Extension, SheetExtension, StringComparison.OrdinalIgnoreCase))
                 .OrderByDescending(f => f.LastWriteTimeUtc)
@@ -460,6 +486,14 @@ public sealed class ProjectSession : IAsyncDisposable
         _store.Save(Project);
         NotifyChanged();
         return dest;
+    }
+
+    /// <summary>Undoes the last send: deletes the PNG from the game and restores what it had replaced.</summary>
+    public void RemoveFromGame(GameProject game)
+    {
+        ConversationFiles.RemoveFromGame(Project, game);
+        _store.Save(Project);
+        NotifyChanged();
     }
 
     /// <summary>Resolves a path relative to the workspace, refusing anything outside it.</summary>

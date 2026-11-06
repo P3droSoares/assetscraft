@@ -1,0 +1,102 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:AssetsCraft.Desktop.ViewModels"
+             xmlns:views="using:AssetsCraft.Desktop.Views"
+             x:Class="AssetsCraft.Desktop.Views.AssetView"
+             x:DataType="vm:AssetViewModel">
+
+  <DockPanel>
+    <!-- ======================= header: name + linear flow ======================= -->
+    <Border DockPanel.Dock="Top" Classes="card" Padding="20,14,14,12" Margin="0,0,0,16">
+      <StackPanel Spacing="12">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <Button Content="Instalar dependências" Command="{Binding Current.InstallDependenciesCommand}"
+                    IsVisible="{Binding !Current.HasNodeModules}" />
+            <Button ToolTip.Tip="Opções do asset" Padding="9,8" VerticalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="3">
+                <Ellipse Width="3" Height="3" Fill="{StaticResource Mist}" />
+                <Ellipse Width="3" Height="3" Fill="{StaticResource Mist}" />
+                <Ellipse Width="3" Height="3" Fill="{StaticResource Mist}" />
+              </StackPanel>
+              <Button.Flyout>
+                <MenuFlyout Placement="BottomEdgeAlignedRight">
+                  <MenuItem Header="Renomear" Command="{Binding RenameCommand}" />
+                  <MenuItem Header="Reiniciar chat desta etapa" Command="{Binding Current.NewConversationCommand}"
+                            ToolTip.Tip="O Claude esquece o histórico; versões e arquivos continuam" />
+                  <Separator />
+                  <MenuItem Header="Excluir asset…" Command="{Binding DeleteCommand}" />
+                </MenuFlyout>
+              </Button.Flyout>
+            </Button>
+          </StackPanel>
+
+          <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="0,0,16,0">
+            <TextBlock Classes="title" Text="{Binding Asset.Name}" TextTrimming="CharacterEllipsis" MaxWidth="420" VerticalAlignment="Center" />
+            <Border Classes="badge"><TextBlock Text="{Binding Asset.KindLabel}" /></Border>
+            <Border Classes="badge" ToolTip.Tip="Espaço total deste asset (versões, animações, anexos e histórico)">
+              <TextBlock Classes="mono" FontSize="12" Text="{Binding Asset.SizeText}" />
+            </Border>
+          </StackPanel>
+        </DockPanel>
+
+        <!-- stepper -->
+        <DockPanel>
+          <!-- Animar: which base version (a sprite can be animated from more than one) -->
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"
+                      IsVisible="{Binding IsShowingAnimation}">
+            <ComboBox ItemsSource="{Binding AnimationChoices}" SelectedItem="{Binding SelectedAnimationChoice}"
+                      IsVisible="{Binding HasManyAnimationChoices}" FontSize="12" MinWidth="110"
+                      ToolTip.Tip="Versão do sprite usada como base destas animações">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:AnimationChoice"><TextBlock Text="{Binding Label}" /></DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Border Classes="badge in-use" IsVisible="{Binding !HasManyAnimationChoices}"
+                    ToolTip.Tip="Versão do sprite usada como base fixa destas animações">
+              <TextBlock Text="{Binding BaseText}" FontSize="12" />
+            </Border>
+          </StackPanel>
+
+          <ItemsControl ItemsSource="{Binding Steps}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:StepViewModel">
+                <StackPanel Orientation="Horizontal">
+                  <Border Classes="step-line" Margin="2,0" IsVisible="{Binding !IsFirst}" />
+                  <Button Classes="step" Classes.done="{Binding IsDone}" Classes.active="{Binding IsActive}"
+                          Classes.locked="{Binding IsLocked}" ToolTip.Tip="{Binding Hint}"
+                          Command="{Binding $parent[UserControl].((vm:AssetViewModel)DataContext).GoToStepCommand}"
+                          CommandParameter="{Binding}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Border Classes="step-dot">
+                        <Panel>
+                          <TextBlock Text="{Binding Number}" IsVisible="{Binding ShowNumber}" />
+                          <Path Width="10" Height="8" Stretch="Uniform" Stroke="{StaticResource Mist}" StrokeThickness="1.6"
+                                Data="M0,4 L4,8 L11,0" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                IsVisible="{Binding IsDone}" />
+                        </Panel>
+                      </Border>
+                      <TextBlock Classes="step-label" Text="{Binding Label}" />
+                    </StackPanel>
+                  </Button>
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </DockPanel>
+      </StackPanel>
+    </Border>
+
+    <!-- ======================= conversation of the current step ======================= -->
+    <ContentControl Content="{Binding Current}">
+      <ContentControl.DataTemplates>
+        <DataTemplate DataType="vm:ProjectViewModel">
+          <views:ProjectView />
+        </DataTemplate>
+      </ContentControl.DataTemplates>
+    </ContentControl>
+  </DockPanel>
+</UserControl>

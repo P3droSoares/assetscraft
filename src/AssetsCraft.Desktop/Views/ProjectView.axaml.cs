@@ -19,12 +19,9 @@ public partial class ProjectView : UserControl
         // Tunnel so Enter is seen before the multi-line TextBox inserts a newline.
         InputBox.AddHandler(KeyDownEvent, OnInputKeyDown, RoutingStrategies.Tunnel);
 
-        DropZone.AddHandler(DragDrop.DragOverEvent, (_, e) => e.DragEffects = DragDropEffects.Copy);
-        DropZone.AddHandler(DragDrop.DropEvent, OnDrop);
-
-        // Files dropped anywhere on the conversation become reference attachments.
-        ChatArea.AddHandler(DragDrop.DragOverEvent, (_, e) => e.DragEffects = DragDropEffects.Copy);
-        ChatArea.AddHandler(DragDrop.DropEvent, OnDropReference);
+        // Files dropped anywhere (chat or result panel) become attachments of the next message.
+        AddHandler(DragDrop.DragOverEvent, (_, e) => e.DragEffects = DragDropEffects.Copy);
+        AddHandler(DragDrop.DropEvent, OnDropReference);
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -58,23 +55,11 @@ public partial class ProjectView : UserControl
         }
     }
 
-    private async void OnAddAssets(object? sender, RoutedEventArgs e)
-    {
-        var top = TopLevel.GetTopLevel(this);
-        if (top is null || _vm is null) return;
-        var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            Title = "Adicionar assets à conversa",
-            AllowMultiple = true,
-        });
-        await _vm.AddAssetsAsync(files.Select(f => f.TryGetLocalPath()).OfType<string>());
-    }
-
     private Window? Owner => TopLevel.GetTopLevel(this) as Window;
 
     private async void OnDeleteSpriteClick(object? sender, RoutedEventArgs e)
     {
-        if (_vm is null || (sender as Control)?.DataContext is not MediaFile sprite || Owner is not { } owner) return;
+        if (_vm?.SelectedSprite is not { } sprite || Owner is not { } owner) return;
         if (!await ConfirmDialog.AskAsync(owner, $"Excluir a versão {sprite.VersionLabel}?", _vm.DeleteSpritePrompt(sprite), "Excluir versão")) return;
         _vm.DeleteSprite(sprite);
     }
@@ -86,14 +71,9 @@ public partial class ProjectView : UserControl
         _vm.DeleteAsset(asset);
     }
 
-    private void OnOpenSpriteClick(object? sender, RoutedEventArgs e)
-    {
-        if ((sender as Control)?.DataContext is MediaFile sprite) ProjectViewModel.OpenWithSystem(sprite.FullPath);
-    }
-
     private async void OnSavePngClick(object? sender, RoutedEventArgs e)
     {
-        if ((sender as Control)?.DataContext is MediaFile sprite) await SaveCopyAsync(sprite.FullPath, sprite.Title + ".png", "Salvar folha de sprites (PNG)");
+        if (_vm?.SelectedSprite is { } sprite) await SaveCopyAsync(sprite.FullPath, sprite.Title + ".png", "Salvar folha de sprites (PNG)");
     }
 
     private async void OnSaveGifClick(object? sender, RoutedEventArgs e)
@@ -129,11 +109,11 @@ public partial class ProjectView : UserControl
         if (top is null || _vm is null) return;
         var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "Anexar referências",
+            Title = "Anexar ao pedido",
             AllowMultiple = true,
             FileTypeFilter =
             [
-                new FilePickerFileType("Referências (imagem, sprite, vídeo, PDF, texto)")
+                new FilePickerFileType("Imagem, sprite, vídeo, PDF ou texto")
                 {
                     Patterns = ["*.png", "*.jpg", "*.jpeg", "*.gif", "*.webp", "*.bmp", "*.svg", "*.aseprite", "*.ase",
                                 "*.mp4", "*.mov", "*.webm", "*.mkv", "*.avi", "*.m4v",
@@ -167,27 +147,9 @@ public partial class ProjectView : UserControl
         await _vm.ExportSelectedAsync(dest, withGifs: true);
     }
 
-    private async void OnSendToGame(object? sender, RoutedEventArgs e)
-    {
-        if (_vm?.SelectedSprite is not { } sprite || _vm.Game is not { } game || Owner is not { } owner) return;
-        if (_vm.SendWouldReplace && !await ConfirmDialog.AskAsync(owner, $"Substituir {_vm.SendTarget}?",
-                $"O projeto {game.Name} já tem {_vm.SendTarget}. Ele será substituído pela versão {sprite.VersionLabel}. " +
-                "O jogo passa a usar a nova imagem na próxima vez que o conteúdo for compilado.", "Substituir"))
-            return;
-        await _vm.SendSelectedToGameAsync();
-    }
-
     private async void OnPreview(object? sender, RoutedEventArgs e)
     {
         if (_vm?.Sheet is not { } sheet || _vm.SelectedSprite is not { } sprite || Owner is not { } owner) return;
         await new PreviewWindow(sheet, sprite.Name, _vm.SelectedAnimation).ShowDialog(owner);
-    }
-
-    private async void OnDrop(object? sender, DragEventArgs e)
-    {
-        if (_vm is null) return;
-        var files = e.Data.GetFiles();
-        if (files is null) return;
-        await _vm.AddAssetsAsync(files.Select(f => f.TryGetLocalPath()).OfType<string>());
     }
 }

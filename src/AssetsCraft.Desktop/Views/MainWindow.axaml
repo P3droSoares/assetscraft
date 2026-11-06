@@ -6,6 +6,7 @@
         x:Class="AssetsCraft.Desktop.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="AssetsCraft"
+        Icon="avares://AssetsCraft/Assets/icon.png"
         Width="1440" Height="880" MinWidth="960" MinHeight="620"
         WindowStartupLocation="CenterScreen">
 
@@ -61,36 +62,31 @@
           </Button>
         </StackPanel>
 
-        <!-- asset types -->
-        <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="12,0,12,14" IsEnabled="{Binding HasGame}">
-          <TextBlock Classes="label-strong" Text="Assets" Margin="6,0,0,2" />
-          <ListBox Classes="nav kinds" ItemsSource="{Binding Kinds}" SelectedItem="{Binding SelectedKind}">
-            <ListBox.Styles>
-              <Style Selector="ListBoxItem" x:DataType="vm:KindNavItem">
-                <Setter Property="IsEnabled" Value="{Binding IsAvailable}" />
-                <Setter Property="ToolTip.Tip" Value="{Binding Hint}" />
-              </Style>
-            </ListBox.Styles>
-            <ListBox.ItemTemplate>
-              <DataTemplate x:DataType="vm:KindNavItem">
-                <DockPanel>
-                  <TextBlock DockPanel.Dock="Right" Classes="mono faint" FontSize="10" Text="{Binding CountText}" VerticalAlignment="Center" />
-                  <TextBlock Text="{Binding Label}" FontSize="13" VerticalAlignment="Center" />
-                </DockPanel>
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
-        </StackPanel>
-
-        <!-- new conversation of the selected type: no name asked, title comes from the first request -->
-        <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="12,0,12,14">
-          <Button Classes="pill-white" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                  Command="{Binding CreateConversationCommand}" IsEnabled="{Binding KindAvailable}"
-                  ToolTip.Tip="O título é criado automaticamente a partir do seu primeiro pedido">
+        <!-- one button to start anything: the type is chosen here, not by switching sections -->
+        <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="12,0,12,16">
+          <Button x:Name="NewButton" Classes="pill-white" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                  IsEnabled="{Binding HasGame}" ToolTip.Tip="Escolha o tipo; o nome sai do seu primeiro pedido">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <TextBlock Text="+" FontSize="15" Margin="0,-2,0,0" />
-              <TextBlock Text="{Binding NewLabel}" />
+              <TextBlock Text="Novo asset" />
             </StackPanel>
+            <Button.Flyout>
+              <Flyout Placement="BottomEdgeAlignedLeft" FlyoutPresenterClasses="picker">
+                <ItemsControl ItemsSource="{Binding NewChoices}" Width="260">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:NewAssetChoice">
+                      <Button Classes="pick" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                              IsEnabled="{Binding IsAvailable}" Click="OnNewPicked">
+                        <StackPanel Spacing="1">
+                          <TextBlock Text="{Binding Label}" FontSize="13" Foreground="{StaticResource Mist}" />
+                          <TextBlock Text="{Binding Hint}" FontSize="11" Foreground="{StaticResource Ash}" TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </Flyout>
+            </Button.Flyout>
           </Button>
           <Border Classes="notice" IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}">
             <TextBlock FontSize="12" Foreground="{StaticResource Mist}" Text="{Binding Error}" TextWrapping="Wrap" />
@@ -138,24 +134,31 @@
         <Border DockPanel.Dock="Bottom" Classes="hairline-t" Padding="16,10" IsVisible="{Binding IsDeleting}">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <Arc Classes="spinner" />
-            <TextBlock Classes="muted" FontSize="12" Text="Excluindo conversa…" />
+            <TextBlock Classes="muted" FontSize="12" Text="Excluindo asset…" />
           </StackPanel>
         </Border>
 
-        <!-- conversations -->
-        <DockPanel DockPanel.Dock="Top" Margin="18,0,16,6">
+        <!-- assets of the game: one row per sprite/tileset, with how far along it is -->
+        <DockPanel DockPanel.Dock="Top" Margin="18,0,16,6" IsVisible="{Binding HasAssets}">
           <TextBlock DockPanel.Dock="Right" Classes="mono faint" FontSize="10" Text="{Binding TotalSizeText}"
-                     ToolTip.Tip="Espaço ocupado pelas conversas desta seção" />
-          <TextBlock Classes="label-strong" Text="{Binding SelectedKind.Label}" />
+                     ToolTip.Tip="Espaço ocupado pelos assets deste projeto" />
+          <TextBlock Classes="label-strong" Text="Assets do jogo" />
         </DockPanel>
-        <ListBox Classes="nav" ItemsSource="{Binding Conversations}" SelectedItem="{Binding SelectedConversation}" Margin="8,0">
+        <ListBox Classes="nav" ItemsSource="{Binding Assets}" SelectedItem="{Binding SelectedAsset}" Margin="8,0">
           <ListBox.ItemTemplate>
-            <DataTemplate x:DataType="vm:ConversationItem">
+            <DataTemplate x:DataType="vm:AssetItem">
               <Grid ColumnDefinitions="Auto,*,Auto" Background="Transparent">
+                <Border Classes="thumb" Margin="0,0,10,0" VerticalAlignment="Center">
+                  <Panel>
+                    <views:SpriteCanvas Sheet="{Binding Thumb}" Animation="{Binding ThumbAnimation}" IsPlaying="False"
+                                        Backdrop="escuro" IsVisible="{Binding HasThumb}" IsHitTestVisible="False" />
+                    <TextBlock Text="?" Classes="faint" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               IsVisible="{Binding !HasThumb}" />
+                  </Panel>
+                </Border>
 
-                <!-- "⋯" menu -->
                 <Button Grid.Column="2" Classes="text row-action" Padding="6,4" VerticalAlignment="Center"
-                        ToolTip.Tip="Opções da conversa">
+                        ToolTip.Tip="Opções do asset">
                   <StackPanel Orientation="Horizontal" Spacing="2.5">
                     <Ellipse Width="3" Height="3" Fill="{StaticResource Fog}" />
                     <Ellipse Width="3" Height="3" Fill="{StaticResource Fog}" />
@@ -165,21 +168,22 @@
                     <MenuFlyout Placement="BottomEdgeAlignedRight">
                       <MenuItem Header="Renomear" Command="{Binding RenameCommand}" />
                       <Separator />
-                      <MenuItem Header="Excluir conversa…" Command="{Binding DeleteCommand}" />
+                      <MenuItem Header="Excluir asset…" Command="{Binding DeleteCommand}" />
                     </MenuFlyout>
                   </Button.Flyout>
                 </Button>
 
-                <StackPanel Grid.Column="1" Spacing="2">
+                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
                   <TextBlock Classes="item-title" Text="{Binding Name}" TextTrimming="CharacterEllipsis" FontSize="13"
                              IsVisible="{Binding !IsRenaming}" />
                   <TextBox Classes="rename" Text="{Binding EditName}" IsVisible="{Binding IsRenaming}"
                            FontSize="13" Padding="6,3" MinHeight="0" Margin="-7,-4,0,-1"
                            KeyDown="OnRenameKeyDown" LostFocus="OnRenameLostFocus" />
                   <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Classes="faint mono" FontSize="11" Text="{Binding UpdatedText}" />
+                    <Ellipse Classes="sent-dot" IsVisible="{Binding IsSent}" ToolTip.Tip="Já está no projeto do jogo" />
+                    <TextBlock Classes="faint" FontSize="11" Text="{Binding KindLabel}" />
                     <TextBlock Classes="faint" FontSize="11" Text="·" />
-                    <TextBlock Classes="faint mono" FontSize="11" Text="{Binding SizeText}" />
+                    <TextBlock Classes="faint" FontSize="11" Text="{Binding StepText}" TextTrimming="CharacterEllipsis" />
                   </StackPanel>
                 </StackPanel>
               </Grid>
@@ -191,29 +195,70 @@
 
     <!-- ======================= content ======================= -->
     <Panel Grid.Column="1">
-      <!-- no game linked yet: everything is made for a project -->
-      <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12" MaxWidth="480"
+      <!-- 1st run: the whole flow at a glance, starting with the only thing needed -->
+      <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="22" MaxWidth="520"
                   IsVisible="{Binding HasNoGame}">
-        <TextBlock Classes="heading" Text="Vincule o projeto do seu jogo" HorizontalAlignment="Center" />
-        <TextBlock Classes="muted" TextWrapping="Wrap" TextAlignment="Center"
-                   Text="Os assets são criados para um projeto: escolha a pasta do jogo (por exemplo, a pasta do .csproj MonoGame). Quando você aprova uma versão, “Enviar ao projeto” copia o PNG para Content/Sprites, Content/Tiles ou Content/Animations. O app não mexe em mais nada do projeto." />
-        <Button Classes="primary" Content="Vincular projeto…" HorizontalAlignment="Center" Margin="0,6,0,0"
-                Command="{Binding LinkGameCommand}" />
+        <StackPanel Spacing="8">
+          <TextBlock Classes="heading" Text="Crie os assets do seu jogo conversando" />
+          <TextBlock Classes="muted" TextWrapping="Wrap"
+                     Text="Você descreve, o Claude desenha pixel a pixel e o PNG vai direto para a pasta do jogo. O caminho é sempre o mesmo:" />
+        </StackPanel>
+        <StackPanel Spacing="14">
+          <DockPanel>
+            <Border Classes="num" DockPanel.Dock="Left" Margin="0,0,12,0"><TextBlock Text="1" /></Border>
+            <StackPanel Spacing="2">
+              <TextBlock Text="Vincule o projeto do jogo" Foreground="{StaticResource Paper}" />
+              <TextBlock Classes="faint" FontSize="12" TextWrapping="Wrap" Text="A pasta do jogo, por exemplo a do .csproj MonoGame. O app só copia PNGs para Content/." />
+            </StackPanel>
+          </DockPanel>
+          <DockPanel>
+            <Border Classes="num" DockPanel.Dock="Left" Margin="0,0,12,0"><TextBlock Text="2" /></Border>
+            <StackPanel Spacing="2">
+              <TextBlock Text="Descreva e refine" Foreground="{StaticResource Mist}" />
+              <TextBlock Classes="faint" FontSize="12" TextWrapping="Wrap" Text="Cada ajuste vira uma nova versão; as antigas continuam salvas." />
+            </StackPanel>
+          </DockPanel>
+          <DockPanel>
+            <Border Classes="num" DockPanel.Dock="Left" Margin="0,0,12,0"><TextBlock Text="3" /></Border>
+            <StackPanel Spacing="2">
+              <TextBlock Text="Anime e envie ao jogo" Foreground="{StaticResource Mist}" />
+              <TextBlock Classes="faint" FontSize="12" TextWrapping="Wrap" Text="Gostou de uma versão? Anime ali mesmo e envie com um clique." />
+            </StackPanel>
+          </DockPanel>
+        </StackPanel>
+        <Button Classes="primary" Content="Vincular projeto do jogo…" HorizontalAlignment="Left" Command="{Binding LinkGameCommand}" />
       </StackPanel>
-      <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="10" MaxWidth="460">
-        <StackPanel.IsVisible>
-          <MultiBinding Converter="{x:Static BoolConverters.And}">
-            <Binding Path="HasGame" />
-            <Binding Path="Current" Converter="{x:Static ObjectConverters.IsNull}" />
-          </MultiBinding>
-        </StackPanel.IsVisible>
-        <TextBlock Classes="heading" Text="{Binding SelectedKind.Label}" HorizontalAlignment="Center" />
-        <TextBlock Classes="muted" TextWrapping="Wrap" TextAlignment="Center" Text="{Binding EmptyKindText}" />
+
+      <!-- game linked, nothing created yet -->
+      <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="18" IsVisible="{Binding ShowWelcome}">
+        <StackPanel Spacing="6" HorizontalAlignment="Center">
+          <TextBlock Classes="heading" Text="O que vamos criar?" HorizontalAlignment="Center" />
+          <TextBlock Classes="muted" Text="{Binding GameName, StringFormat='Para {0}. Você pode criar outros depois pelo “+ Novo asset”.'}"
+                     HorizontalAlignment="Center" />
+        </StackPanel>
+        <ItemsControl ItemsSource="{Binding NewChoices}" HorizontalAlignment="Center">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate><WrapPanel HorizontalAlignment="Center" /></ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:NewAssetChoice">
+              <Button Classes="choice" Margin="6" IsEnabled="{Binding IsAvailable}"
+                      Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).NewAssetCommand}"
+                      CommandParameter="{Binding}">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="{Binding Label}" FontSize="14" Foreground="{StaticResource Paper}" />
+                  <TextBlock Text="{Binding Hint}" FontSize="12" Foreground="{StaticResource Fog}" TextWrapping="Wrap" />
+                </StackPanel>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
       </StackPanel>
+
       <ContentControl Content="{Binding Current}" Margin="16">
         <ContentControl.DataTemplates>
-          <DataTemplate DataType="vm:ProjectViewModel">
-            <views:ProjectView />
+          <DataTemplate DataType="vm:AssetViewModel">
+            <views:AssetView />
           </DataTemplate>
         </ContentControl.DataTemplates>
       </ContentControl>

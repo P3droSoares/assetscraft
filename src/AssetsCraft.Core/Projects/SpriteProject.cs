@@ -29,6 +29,12 @@ public sealed class SpriteProject
     /// <summary>Last version sent to the game project ("heroi-v3.png") and where it went.</summary>
     public string? SentVersion { get; set; }
     public string? SentPath { get; set; }
+
+    /// <summary>Copy of the file the first send replaced in the game (restored by "Remover do jogo").</summary>
+    public string? SentBackup { get; set; }
+
+    /// <summary>Topmost folder the first send had to create in the game (removed again if left empty).</summary>
+    public string? SentCreatedDir { get; set; }
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.Now;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.Now;
 

@@ -12,13 +12,31 @@ public sealed class GameProject
     public bool IsMonoGame { get; set; }
     public DateTimeOffset LinkedAt { get; init; } = DateTimeOffset.Now;
 
-    /// <summary>Where "Enviar ao projeto" writes: &lt;game&gt;/Content when it exists (MonoGame), else the folder itself.</summary>
+    /// <summary>
+    /// Where "Enviar ao jogo" writes: &lt;game&gt;/Content when it exists; otherwise the folder of the MonoGame
+    /// Content.mgcb (often one level down: &lt;repo&gt;/&lt;Projeto&gt;/Content); otherwise the folder itself.
+    /// </summary>
     public string ContentRoot
     {
         get
         {
             var content = System.IO.Path.Combine(Path, "Content");
-            return Directory.Exists(content) ? content : Path;
+            if (Directory.Exists(content)) return content;
+            try
+            {
+                var mgcb = Directory.EnumerateFiles(Path, "*.mgcb", new EnumerationOptions
+                    {
+                        RecurseSubdirectories = true, MaxRecursionDepth = 3, IgnoreInaccessible = true,
+                    })
+                    .Where(f => !System.IO.Path.GetRelativePath(Path, f).Split(System.IO.Path.DirectorySeparatorChar)
+                        .Any(s => s is "bin" or "obj"))
+                    .OrderBy(f => f.Length)
+                    .FirstOrDefault();
+                if (mgcb is not null) return System.IO.Path.GetDirectoryName(mgcb)!;
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+            return Path;
         }
     }
 

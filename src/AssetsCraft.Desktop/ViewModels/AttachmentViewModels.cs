@@ -4,7 +4,7 @@ using AssetsCraft.Core.Sessions;
 
 namespace AssetsCraft.Desktop.ViewModels;
 
-/// <summary>A reference file waiting in the composer to be sent.</summary>
+/// <summary>A file waiting in the composer to be sent (inspiration, or material for the sprite).</summary>
 public sealed partial class PendingAttachment : ObservableObject
 {
     public PendingAttachment(string path)
@@ -28,6 +28,17 @@ public sealed partial class PendingAttachment : ObservableObject
     private Bitmap? _thumbnail;
 
     public bool HasThumbnail => Thumbnail is not null;
+
+    /// <summary>
+    /// Off = inspiration only (style, palette, poses). On = material used for real in the sprite (edit, crop,
+    /// animate, reuse the palette): it goes to assets/ instead of references/.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(UseLabel))]
+    private bool _useAsMaterial;
+
+    public string UseLabel => UseAsMaterial ? "usar no sprite" : "só inspiração";
+    public bool CanBeMaterial => Kind is "imagem" or "arquivo";
 
     private async Task LoadThumbnailAsync()
     {
