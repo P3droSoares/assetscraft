@@ -3,6 +3,13 @@
 All notable changes to AssetsCraft are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **Game palette** in the new project settings (⚙): upload a palette (image, `.hex`, `.gpl`, `.pal`, `.txt`, `.json`) and
+  every sprite, tile and animation of that game uses only its colors. Claude is instructed to use `"palette": "game"`,
+  and `sprite.mjs render` snaps any other color to the nearest palette color, reporting what it changed.
+
 ## [0.1.0] - 2026-11-05
 
 First public release.

@@ -101,6 +101,16 @@ Conversas de sprite e tiles recebem, antes de cada pedido, uma amostra dos PNGs 
 prompt (`GameStyleSample.Instructions`) manda o Claude analisar essa amostra e seguir o estilo. O Claude só vê a
 cópia: não tem acesso à pasta do jogo.
 
+## Paleta do jogo
+
+**Configurações do projeto** (⚙ ao lado do seletor de jogo) aceitam uma paleta: imagem (`.png`/`.gif`, cada cor
+opaca distinta na ordem de leitura, até 256), `.hex`, `.gpl` (GIMP), `.pal` (JASC), `.txt` (Paint.NET) ou `.json`.
+Ela fica em `games.json` (`Palette`) e vale para todas as conversas do jogo: o app grava
+`.assetscraft/palette.json` em cada workspace, o system prompt (`GamePalette.Instructions`) e cada pedido mandam
+usar só essas cores, e o `tools/sprite.mjs render` aplica a regra de verdade: todo pixel visível vira a cor mais
+próxima da paleta (distância RGB ponderada) e a transparência vira 0/255, com um aviso listando as trocas.
+`"palette": "game"` mapeia as chaves `0-9a-v…` para as cores da paleta, na ordem do arquivo.
+
 ## Requisitos
 
 - Claude Code instalado e logado (rode `claude` uma vez para fazer login)

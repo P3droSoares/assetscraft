@@ -41,6 +41,9 @@ public sealed class GameProject
     }
 
     public bool Exists => Directory.Exists(Path);
+
+    /// <summary>Fixed color palette for everything made for this game (null = free colors).</summary>
+    public GamePalette? Palette { get; set; }
 }
 
 /// <summary>Linked game projects and the active one, in &lt;data&gt;/games.json.</summary>
@@ -83,6 +86,18 @@ public sealed partial class GameStore
         lock (_lock)
         {
             _state.ActiveId = game.Id;
+            SaveLocked();
+        }
+    }
+
+    /// <summary>Sets (or clears, with null) the game's palette.</summary>
+    public void SetPalette(GameProject game, GamePalette? palette)
+    {
+        lock (_lock)
+        {
+            var stored = _state.Games.FirstOrDefault(g => g.Id == game.Id) ?? throw new InvalidOperationException("Projeto não vinculado.");
+            stored.Palette = palette;
+            game.Palette = palette;
             SaveLocked();
         }
     }

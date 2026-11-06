@@ -1,0 +1,60 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:AssetsCraft.Desktop.ViewModels"
+        x:Class="AssetsCraft.Desktop.Views.GameSettingsDialog"
+        x:DataType="vm:GameSettingsViewModel"
+        Width="560" SizeToContent="Height" CanResize="False"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{StaticResource Carbon}" Title="Configurações do projeto">
+  <Border BorderBrush="{StaticResource Graphite}" BorderThickness="0,1,0,0" Padding="24">
+    <StackPanel Spacing="18">
+      <StackPanel Spacing="4">
+        <TextBlock Classes="title" Text="Configurações do projeto" />
+        <TextBlock Classes="muted" FontSize="13" Text="{Binding GameName, StringFormat='Valem para tudo que for criado para {0}.'}" />
+        <TextBlock Classes="mono faint" FontSize="11" Text="{Binding GamePath}" TextTrimming="CharacterEllipsis" />
+      </StackPanel>
+
+      <!-- palette -->
+      <Border Classes="panel" Padding="16">
+        <StackPanel Spacing="12">
+          <DockPanel>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+              <Button Content="Remover" Click="OnRemove" IsVisible="{Binding HasPalette}"
+                      ToolTip.Tip="Volta a deixar as cores livres. Sprites já criados não mudam." />
+              <Button Classes="solid" Content="{Binding UploadLabel}" Click="OnUpload" />
+            </StackPanel>
+            <StackPanel Spacing="2" VerticalAlignment="Center">
+              <TextBlock Classes="section" Text="Paleta de cores" />
+              <TextBlock Classes="faint" FontSize="12" Text="{Binding PaletteTitle}" />
+            </StackPanel>
+          </DockPanel>
+
+          <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" LineHeight="18"
+                     Text="Com uma paleta, sprites, tiles e animações deste projeto usam só essas cores: o Claude é instruído a seguir a paleta e qualquer cor de fora é trocada pela mais próxima ao gerar." />
+
+          <ItemsControl ItemsSource="{Binding Swatches}" IsVisible="{Binding HasPalette}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:Swatch">
+                <Border Width="24" Height="24" Margin="0,0,4,4" CornerRadius="4" Background="{Binding Color}"
+                        BorderBrush="{StaticResource Smoke}" BorderThickness="1" ToolTip.Tip="{Binding Color}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <TextBlock Classes="faint" FontSize="11" TextWrapping="Wrap"
+                     Text="Formatos: imagem de paleta (.png, .gif), .hex, .gpl (GIMP), .pal (JASC) ou .txt (Paint.NET). Paletas prontas em lospec.com/palette-list." />
+          <Border Classes="notice" IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <TextBlock FontSize="12" Foreground="{StaticResource Mist}" TextWrapping="Wrap" Text="{Binding Error}" />
+          </Border>
+        </StackPanel>
+      </Border>
+
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+        <Button Content="Fechar" Click="OnClose" IsCancel="True" IsDefault="True" />
+      </StackPanel>
+    </StackPanel>
+  </Border>
+</Window>

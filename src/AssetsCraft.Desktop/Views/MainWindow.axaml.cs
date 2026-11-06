@@ -47,6 +47,7 @@ public partial class MainWindow : Window
         if (_vm is null) return;
         _vm.Confirm = (title, body, confirm) => ConfirmDialog.AskAsync(this, title, body, confirm);
         _vm.PickFolder = PickGameFolderAsync;
+        _vm.ShowSettings = settings => new GameSettingsDialog(settings).ShowDialog(this);
         _vm.RenameStarted += FocusRenameBox;
         _vm.FocusComposerRequested += FocusComposer;
     }

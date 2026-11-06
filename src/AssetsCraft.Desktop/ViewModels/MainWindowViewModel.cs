@@ -62,7 +62,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     [ObservableProperty] private string _totalSizeText = "";
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasGame), nameof(HasNoGame), nameof(GameName), nameof(GameInfo))]
+    [NotifyPropertyChangedFor(nameof(HasGame), nameof(HasNoGame), nameof(GameName), nameof(GameInfo), nameof(PaletteInfo), nameof(HasGamePalette))]
     private GameProject? _activeGame;
 
     public bool HasGame => ActiveGame is not null;
@@ -70,6 +70,26 @@ public sealed partial class MainWindowViewModel : ObservableObject
     public string GameName => ActiveGame?.Name ?? "Nenhum projeto";
     public string GameInfo => ActiveGame is null ? "" : (ActiveGame.IsMonoGame ? "MonoGame · " : "") + ActiveGame.Path;
     public bool HasAssets => Assets.Count > 0;
+    public bool HasGamePalette => ActiveGame?.Palette is not null;
+    public string PaletteInfo => ActiveGame?.Palette is { } p ? $"Paleta {p.Name} · {p.Colors.Count} cores" : "";
+
+    /// <summary>Set by the view: shows the game settings dialog.</summary>
+    public Func<GameSettingsViewModel, Task>? ShowSettings { get; set; }
+
+    [RelayCommand]
+    private async Task OpenGameSettings()
+    {
+        if (ActiveGame is not { } game || ShowSettings is null) return;
+        await ShowSettings(new GameSettingsViewModel(game, _games, OnPaletteChanged));
+    }
+
+    /// <summary>The palette changed: every open conversation of this game rewrites its palette file now.</summary>
+    private void OnPaletteChanged()
+    {
+        OnPropertyChanged(nameof(PaletteInfo));
+        OnPropertyChanged(nameof(HasGamePalette));
+        foreach (var vm in _cache.Values) vm.RefreshPalette();
+    }
     public bool ShowWelcome => HasGame && Assets.Count == 0;
 
     /// <summary>Set by the view: shows a confirmation dialog and returns the user's choice.</summary>

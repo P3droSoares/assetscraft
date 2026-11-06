@@ -85,6 +85,7 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
         // first open after an update (new shared packages) or an old private node_modules: fix it silently
         if (!session.DependenciesReady && !session.IsInstalling) _ = Task.Run(session.InstallDependenciesAsync);
         RefreshModels();
+        RefreshPalette();
         _ = RefreshGameStyleAsync();
         Sync();
         RefreshFiles();
@@ -103,6 +104,29 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
     // ------------------------------------------------------------------ asset type
 
     public AssetKindInfo KindInfo => AssetKinds.Get(Project.Kind);
+
+    // ------------------------------------------------------------------ game palette
+
+    /// <summary>First colors of the game's palette, shown above the composer (all of them in the tooltip).</summary>
+    public ObservableCollection<Swatch> PaletteSwatches { get; } = [];
+    public bool HasPalette => _session.Palette is not null;
+    public string PaletteLabel => _session.Palette is { } p ? $"Paleta {p.Name}" : "";
+    public string PaletteMore => _session.Palette is { Colors.Count: > 24 } p ? $"+{p.Colors.Count - 24}" : "";
+    public string PaletteTip => _session.Palette is { } p
+        ? $"Este projeto usa só a paleta “{p.Name}” ({p.Colors.Count} cores). Qualquer cor de fora é trocada pela mais próxima. Mude em Configurações do projeto (⚙)."
+        : "";
+
+    /// <summary>Writes the current game palette into the workspace and updates the strip.</summary>
+    public void RefreshPalette()
+    {
+        _session.SyncPalette(Game);
+        PaletteSwatches.Clear();
+        foreach (var c in _session.Palette?.Colors.Take(24) ?? []) PaletteSwatches.Add(new Swatch(c));
+        OnPropertyChanged(nameof(HasPalette));
+        OnPropertyChanged(nameof(PaletteLabel));
+        OnPropertyChanged(nameof(PaletteMore));
+        OnPropertyChanged(nameof(PaletteTip));
+    }
 
     // ------------------------------------------------------------------ game style
 
@@ -499,6 +523,7 @@ public sealed partial class ProjectViewModel : ObservableObject, IDisposable
         _wasBusy = true;
         IsBusy = true;
         await RefreshGameStyleAsync(); // picks up sprites added to the game since the conversation opened
+        RefreshPalette();
         await _session.SendAsync(text, files, materials);
         _ = Item.RefreshSizeAsync(); // references were copied into the conversation
     }

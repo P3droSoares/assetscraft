@@ -40,6 +40,7 @@ with **Godot, Unity, Phaser, LÖVE, Defold** and any other engine.
 - **Animations from your approved sprite.** Walk, jump, attack, idle… The design stays the same, so it looks like the same character moving.
 - **Every tweak is a new version** (`v1`, `v2`, `v3`…). Nothing gets overwritten; compare versions and pick the best one.
 - **Matches your game's art style.** AssetsCraft samples the PNGs already in your project (atlases, tilesets) and Claude follows their palette, outline, shading and size.
+- **Lock your game's palette.** Upload a palette (Lospec `.png`, `.hex`, `.gpl`, `.pal`, `.txt`) in the project settings (⚙). Every sprite, tile and animation then uses only those colors, and any stray color is snapped to the nearest one on render.
 - **Pixel-perfect viewer.** Nearest-neighbour zoom, frame-by-frame playback, a checkerboard for transparency, a pixel grid and a full-sheet view.
 - **Ship to game with one click, and undo it.** The PNG goes to `Content/Sprites`, `Content/Tiles` or `Content/Animations`, always after you confirm. **Remover do jogo** (remove from game) restores whatever was there before.
 - **References and materials.** Drop in images, old sprites, palettes or even videos (frames are extracted with the bundled FFmpeg). Mark a file as inspiration only, or as material Claude should actually use.

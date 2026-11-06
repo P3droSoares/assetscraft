@@ -39,6 +39,7 @@ isso funciona também com **Godot, Unity, Phaser, LÖVE, Defold** e qualquer out
 - **Animações a partir do sprite aprovado:** andar, pular, atacar, idle… O design fica fixo e o personagem continua o mesmo.
 - **Cada ajuste é uma nova versão** (`v1`, `v2`, `v3`…). Nada se perde: compare as versões e escolha a melhor.
 - **Segue o estilo do seu jogo:** o app pega uma amostra dos PNGs do projeto (atlas, tilesets) e o Claude acompanha a paleta, o contorno, o sombreamento e o tamanho.
+- **Paleta fixa do jogo:** envie uma paleta (`.png` do Lospec, `.hex`, `.gpl`, `.pal`, `.txt`) nas configurações do projeto (⚙). Todo sprite, tile e animação passa a usar só essas cores; qualquer cor de fora é trocada pela mais próxima ao gerar.
 - **Visualizador pixel-perfect:** zoom sem borrar, quadro a quadro, fundo xadrez para a transparência, grade de pixels e folha inteira.
 - **Envio ao jogo com um clique, e com volta:** o PNG vai para `Content/Sprites`, `Content/Tiles` ou `Content/Animations`, sempre com confirmação. **Remover do jogo** devolve o que estava lá antes.
 - **Referências e materiais:** arraste imagens, sprites antigos, paletas e até vídeos (os quadros saem pelo FFmpeg embutido). Marque cada arquivo como "só inspiração" ou "usar no sprite".

@@ -97,6 +97,8 @@ O exemplo do formato abaixo mostra animações porque o formato é o mesmo para 
 - `palette`: caractere → cor (`"#rrggbb"`, `"#rrggbbaa"` ou `null` = transparente). `.` e espaço são sempre
   transparentes. Paletas prontas: `"palette": "pico8"` ou `{ "$base": "endesga32", … }` — `node tools/sprite.mjs palettes`
   mostra os caracteres de cada uma (pico8, sweetie16, gameboy, endesga32).
+  **Paleta do jogo:** se `.assetscraft/palette.json` existir, o projeto tem paleta fixa: use `"palette": "game"`
+  (ou `{ "$base": "game", … }` só com cores dela). Qualquer outra cor é trocada pela mais próxima no render, com aviso.
 - `animations`: em ordem; cada uma vira **uma linha** da folha. `fps` (padrão 8), `loop` (padrão true),
   `pingPong`. Um quadro pode ter `duration` (ms) próprio.
 - Um quadro pode ser (combináveis, aplicados nesta ordem):

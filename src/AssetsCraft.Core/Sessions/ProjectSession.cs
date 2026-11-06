@@ -35,9 +35,9 @@ public sealed class ProjectSession : IAsyncDisposable
         // what this conversation may produce (static sprite, tiles, animation of a base sprite…)
         var kind = AssetKinds.Get(project.Kind);
         // new sprites and tiles follow the style of the PNGs already in the linked game (animations keep their base)
-        var instructions = project.Kind is AssetKind.Sprite or AssetKind.Tile
+        var instructions = (project.Kind is AssetKind.Sprite or AssetKind.Tile
             ? kind.Instructions + "\n\n" + GameStyleSample.Instructions
-            : kind.Instructions;
+            : kind.Instructions) + "\n\n" + GamePalette.Instructions;
         _claude = new ClaudeCodeSession(options.WithAppendedPrompt(instructions), project.Path, project.SessionId);
         if (project.Model is not null) _claude.Model = project.Model;
         _claude.EventReceived += OnClaudeEvent;
@@ -121,6 +121,16 @@ public sealed class ProjectSession : IAsyncDisposable
     /// <summary>PNGs of the linked game copied as style reference (see <see cref="GameStyleSample"/>).</summary>
     public int GameStyleCount { get; private set; }
 
+    /// <summary>Palette of the linked game currently written into the workspace (null = free colors).</summary>
+    public GamePalette? Palette { get; private set; }
+
+    /// <summary>Writes the game's palette into .assetscraft/palette.json (or removes it) for Claude and sprite.mjs.</summary>
+    public void SyncPalette(GameProject? game)
+    {
+        Palette = game?.Palette;
+        try { GamePalette.SyncInto(Project.Path, Palette); } catch { /* next send retries */ }
+    }
+
     /// <summary>Refreshes references/game-style/ from the linked game (sprites and tiles only).</summary>
     public int SyncGameStyle(GameProject? game)
     {
@@ -197,6 +207,9 @@ public sealed class ProjectSession : IAsyncDisposable
                      "de verdade no sprite, copie-o para assets/.";
         }
 
+        if (Palette is { } pal)
+            prompt += $"\n\n---\nPaleta do jogo ativa: \"{pal.Name}\", {pal.Colors.Count} cores ({GamePalette.WorkspaceFile}). " +
+                      "Use somente essas cores (\"palette\": \"game\").";
         if (isFirstRequest && GameStyleCount > 0)
             prompt += $"\n\n---\nEstilo do jogo: há {GameStyleCount} PNGs do projeto em {GameStyleSample.Folder}/ (veja o INDEX.md). " +
                       "Analise-os antes de desenhar e siga esse estilo, a menos que eu peça outro.";

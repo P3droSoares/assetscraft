@@ -59,6 +59,23 @@
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
 
+              <!-- the game's fixed palette, so the constraint is visible while writing -->
+              <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,2,0,6"
+                          IsVisible="{Binding HasPalette}" ToolTip.Tip="{Binding PaletteTip}" Background="Transparent">
+                <TextBlock Classes="faint" FontSize="11" Text="{Binding PaletteLabel}" VerticalAlignment="Center" />
+                <ItemsControl ItemsSource="{Binding PaletteSwatches}" VerticalAlignment="Center">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="2" /></ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:Swatch">
+                      <Border Width="10" Height="10" CornerRadius="2" Background="{Binding Color}" BorderBrush="{StaticResource Graphite}" BorderThickness="1" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Classes="faint mono" FontSize="10" Text="{Binding PaletteMore}" VerticalAlignment="Center" />
+              </StackPanel>
+
               <DockPanel DockPanel.Dock="Bottom" Margin="0,6,0,0">
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
                   <Button Classes="primary" Content="Enviar" Command="{Binding SendCommand}" IsVisible="{Binding !IsBusy}" />

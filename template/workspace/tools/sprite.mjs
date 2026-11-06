@@ -33,12 +33,85 @@ const PALETTES = {
     "262b44", "181425", "ff0044", "68386c", "b55088", "f6757a", "e8b796", "c28569"],
 };
 
+// ---------------------------------------------------------------- game palette (set by the app)
+/** Fixed palette of the linked game, from .assetscraft/palette.json: { name, colors: ["#rrggbb", …] } or null. */
+let gamePaletteCache;
+function gamePalette() {
+  if (gamePaletteCache !== undefined) return gamePaletteCache;
+  try {
+    const p = JSON.parse(fss.readFileSync(path.resolve(".assetscraft", "palette.json"), "utf8"));
+    const colors = (p.colors ?? []).map((c) => String(c).replace(/^#/, "").toLowerCase()).filter((c) => /^[0-9a-f]{6}$/.test(c));
+    gamePaletteCache = colors.length ? { name: p.name ?? "jogo", colors } : null;
+  } catch {
+    gamePaletteCache = null;
+  }
+  return gamePaletteCache;
+}
+
+/** Keys for palettes bigger than 32 colors ("." and space stay transparent). */
+const GAME_KEYS = KEYS + "wxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!$%&*+-/:;<=>?@^_|~()[]{}',`";
+
 function builtinPalette(name) {
-  const colors = PALETTES[String(name).toLowerCase()];
-  if (!colors) throw new Error(`Paleta desconhecida: "${name}". Opções: ${Object.keys(PALETTES).join(", ")}.`);
+  const lower = String(name).toLowerCase();
+  if (lower === "game" || lower === "jogo") {
+    const gp = gamePalette();
+    if (!gp) throw new Error(`"palette": "game" só funciona quando o projeto do jogo tem uma paleta (configurações do projeto no app).`);
+    const map = { ".": null };
+    gp.colors.forEach((c, i) => { if (i < GAME_KEYS.length) map[GAME_KEYS[i]] = "#" + c; });
+    return map;
+  }
+  const colors = PALETTES[lower];
+  if (!colors) throw new Error(`Paleta desconhecida: "${name}". Opções: ${Object.keys(PALETTES).join(", ")}${gamePalette() ? ", game" : ""}.`);
   const map = { ".": null };
   colors.forEach((c, i) => (map[KEYS[i]] = "#" + c));
   return map;
+}
+
+/**
+ * Enforces the game palette: every visible pixel becomes the nearest palette color (weighted RGB distance) and
+ * alpha becomes 0 or 255. Returns what was changed so the render can report it.
+ */
+function snapToGamePalette(anims) {
+  const gp = gamePalette();
+  if (!gp) return null;
+  const pal = gp.colors.map((c) => [parseInt(c.slice(0, 2), 16), parseInt(c.slice(2, 4), 16), parseInt(c.slice(4, 6), 16)]);
+  const exact = new Set(gp.colors.map((c) => parseInt(c, 16)));
+  const cache = new Map();
+  const nearest = (r, g, b) => {
+    const key = (r << 16) | (g << 8) | b;
+    let hit = cache.get(key);
+    if (hit !== undefined) return hit;
+    let best = 0, bestD = Infinity;
+    for (let i = 0; i < pal.length; i++) {
+      const [pr, pg, pb] = pal[i], rm = (r + pr) / 2, dr = r - pr, dg = g - pg, db = b - pb;
+      const d = (2 + rm / 256) * dr * dr + 4 * dg * dg + (2 + (255 - rm) / 256) * db * db;
+      if (d < bestD) { bestD = d; best = i; }
+    }
+    cache.set(key, (hit = best));
+    return hit;
+  };
+  const hex = (r, g, b) => "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
+  let pixels = 0, alpha = 0;
+  const swaps = new Map();
+  const seen = new Set();
+  for (const a of anims) for (const f of a.frames) {
+    if (seen.has(f.img)) continue;
+    seen.add(f.img);
+    const d = f.img.data;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] === 0) continue;
+      if (d[i + 3] < 128) { d[i] = d[i + 1] = d[i + 2] = d[i + 3] = 0; alpha++; continue; }
+      if (d[i + 3] !== 255) { d[i + 3] = 255; alpha++; }
+      const key = (d[i] << 16) | (d[i + 1] << 8) | d[i + 2];
+      if (exact.has(key)) continue;
+      const [nr, ng, nb] = pal[nearest(d[i], d[i + 1], d[i + 2])];
+      const from = hex(d[i], d[i + 1], d[i + 2]);
+      swaps.set(from, hex(nr, ng, nb));
+      d[i] = nr; d[i + 1] = ng; d[i + 2] = nb;
+      pixels++;
+    }
+  }
+  return { name: gp.name, count: gp.colors.length, pixels, alpha, swaps };
 }
 
 function parseColor(c, where) {
@@ -378,6 +451,7 @@ async function cmdRender(srcFile, opts) {
   const b = new SpriteBuild(src, srcFile);
   const anims = await b.build();
   checkKind(anims);
+  const snapped = snapToGamePalette(anims);
 
   const ex = src.export ?? {};
   const scale = Math.max(1, Math.round(Number(opts.scale ?? ex.scale ?? 1)));
@@ -453,6 +527,16 @@ async function cmdRender(srcFile, opts) {
   for (const a of anims) console.log(`    animação "${a.name}": ${a.frames.length} quadros, ${a.fps} fps${a.loop ? ", loop" : ""}${a.pingPong ? ", ping-pong" : ""}`);
   for (const g of gifs) console.log(`    ${g}`);
   console.log(`    conferir: leia ${rel(previewFile)} (ampliado ${zoom}x, linhas magenta = limites dos quadros)`);
+  if (snapped) {
+    if (snapped.pixels === 0 && snapped.alpha === 0) console.log(`    paleta do jogo "${snapped.name}" (${snapped.count} cores): ok, todas as cores são da paleta`);
+    else {
+      const list = [...snapped.swaps].slice(0, 12).map(([a, b]) => `${a}→${b}`).join(", ");
+      console.log(`    AVISO paleta do jogo "${snapped.name}": ${snapped.pixels} pixels fora da paleta foram trocados pela cor mais próxima` +
+        (snapped.swaps.size ? ` (${list}${snapped.swaps.size > 12 ? ", …" : ""})` : "") +
+        (snapped.alpha ? `; ${snapped.alpha} pixels semitransparentes viraram opacos/transparentes` : "") +
+        `. Confira o preview; se ficou ruim, redesenhe usando "palette": "game".`);
+    }
+  }
 }
 
 // ---------------------------------------------------------------- preview / inspect / palettes
@@ -524,6 +608,12 @@ async function cmdInspect(file, opts) {
 }
 
 function cmdPalettes() {
+  const gp = gamePalette();
+  if (gp) {
+    console.log(`game — PALETA DO JOGO "${gp.name}" (${gp.colors.length} cores, obrigatória) — use "palette": "game"`);
+    console.log("  " + gp.colors.map((c, i) => `${i < GAME_KEYS.length ? GAME_KEYS[i] : "-"}=#${c}`).join(" "));
+    console.log("(as paletas abaixo não podem ser usadas neste projeto)");
+  }
   for (const name of Object.keys(PALETTES)) {
     const map = builtinPalette(name);
     console.log(`${name} (${PALETTES[name].length} cores) — use "palette": "${name}" ou { "$base": "${name}", "x": "#hex" }`);
