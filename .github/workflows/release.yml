@@ -1,0 +1,38 @@
+name: Release
+
+# Push a tag like v0.2.0 to build self-contained Windows and Linux packages and publish a GitHub release.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Build (win-x64, linux-x64)
+        run: scripts/publish.sh linux-x64 win-x64
+      - name: Package
+        run: scripts/package.sh
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes=$(awk -v v="${GITHUB_REF_NAME#v}" '$0 ~ "^## \\[" v "\\]" {f=1; next} /^## \[/ {f=0} f' CHANGELOG.md)
+          files=(dist/AssetsCraft-*.zip dist/AssetsCraft-*.tar.gz)
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "${files[@]}" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "${files[@]}" --title "AssetsCraft $GITHUB_REF_NAME" --notes "$notes"
+          fi

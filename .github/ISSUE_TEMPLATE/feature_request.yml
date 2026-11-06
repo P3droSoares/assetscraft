@@ -1,0 +1,15 @@
+name: Feature request
+description: Suggest an idea for AssetsCraft
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would you like to do?
+      description: Describe the problem or the workflow you have in mind (e.g. "export to Godot SpriteFrames").
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: How could it work?
