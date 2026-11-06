@@ -11,7 +11,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Product>AssetsCraft</Product>
     <Description>AI pixel art sprite and sprite sheet generator for game developers, powered by Claude Code.</Description>
     <Authors>Pedro Cruz</Authors>

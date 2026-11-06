@@ -5,6 +5,8 @@ All notable changes to AssetsCraft are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-06
+
 ### Added
 - **Game palette** in the new project settings (⚙): upload a palette (image, `.hex`, `.gpl`, `.pal`, `.txt`, `.json`) and
   every sprite, tile and animation of that game uses only its colors. Claude is instructed to use `"palette": "game"`,
@@ -26,4 +28,6 @@ First public release.
 - Claude usage meter (5h session and weekly limits) and a model picker per conversation.
 - Self-contained builds for Windows x64 and Linux x64.
 
+[Unreleased]: https://github.com/P3droSoares/assetscraft/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/P3droSoares/assetscraft/releases/tag/v0.2.0
 [0.1.0]: https://github.com/P3droSoares/assetscraft/releases/tag/v0.1.0
