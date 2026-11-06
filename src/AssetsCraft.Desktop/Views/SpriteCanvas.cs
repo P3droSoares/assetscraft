@@ -207,7 +207,8 @@ public sealed class SpriteCanvas : Control
         if (zoom != EffectiveZoom)
         {
             EffectiveZoom = zoom;
-            EffectiveZoomChanged?.Invoke(zoom);
+            // Render pass não pode invalidar visuais: assinantes (ex.: TextBlock) rodam depois.
+            Dispatcher.UIThread.Post(() => EffectiveZoomChanged?.Invoke(zoom));
         }
         var size = new Size(src.Width * zoom, src.Height * zoom);
         var dest = new Rect(Math.Round((bounds.Width - size.Width) / 2), Math.Round((bounds.Height - size.Height) / 2), size.Width, size.Height);
